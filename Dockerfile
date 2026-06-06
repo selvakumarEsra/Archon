@@ -10,8 +10,18 @@ FROM oven/bun:1.3.11-slim AS deps
 
 WORKDIR /app
 
+# Install Node + pnpm via Corepack. The oven/bun base image lacks Node, so we
+# install nodesource Node 22 first, then activate pnpm. Bun still executes the
+# code in Stage 1 of the Bun → Node migration — pnpm only orchestrates installs.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates gnupg \
+ && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/* \
+ && corepack enable \
+ && corepack prepare pnpm@9.15.0 --activate
+
 # Copy root package files and lockfile
-COPY package.json bun.lock ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy ALL workspace package.json files (monorepo lockfile depends on all of them)
 COPY packages/adapters/package.json ./packages/adapters/
@@ -19,7 +29,7 @@ COPY packages/cli/package.json ./packages/cli/
 COPY packages/core/package.json ./packages/core/
 # docs-web source is NOT copied — it's a static site deployed separately
 # (see .github/workflows/deploy-docs.yml). package.json is included only
-# so Bun's workspace lockfile resolves correctly.
+# so the workspace lockfile resolves correctly.
 COPY packages/docs-web/package.json ./packages/docs-web/
 COPY packages/git/package.json ./packages/git/
 COPY packages/isolation/package.json ./packages/isolation/
@@ -29,11 +39,10 @@ COPY packages/server/package.json ./packages/server/
 COPY packages/web/package.json ./packages/web/
 COPY packages/workflows/package.json ./packages/workflows/
 
-# Install ALL dependencies (including devDependencies needed for web build)
-# --linker=hoisted: Bun's default "isolated" linker stores packages in
-# node_modules/.bun/ with symlinks that Vite/Rollup cannot resolve during
-# production builds. Hoisted layout gives classic flat node_modules.
-RUN bun install --frozen-lockfile --linker=hoisted
+# Install ALL dependencies (including devDependencies needed for web build).
+# --shamefully-hoist gives a flat node_modules layout that Vite/Rollup can resolve
+# during production builds — equivalent purpose to Bun's --linker=hoisted.
+RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # ---------------------------------------------------------------------------
 # Stage 2: Build web UI (Vite + React)
@@ -44,7 +53,7 @@ FROM deps AS web-build
 COPY . .
 
 # Build the web frontend — output goes to packages/web/dist/
-RUN bun run build:web && \
+RUN pnpm run build:web && \
     test -f packages/web/dist/index.html || \
     (echo "ERROR: Web build produced no index.html" >&2 && exit 1)
 
@@ -120,8 +129,16 @@ RUN useradd -m -u 1001 -s /bin/bash appuser \
 RUN mkdir -p /.archon/workspaces /.archon/worktrees \
     && chown -R appuser:appuser /.archon
 
+# Install Node + pnpm via Corepack for the production stage as well.
+RUN apt-get update && apt-get install -y --no-install-recommends gnupg \
+ && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/* \
+ && corepack enable \
+ && corepack prepare pnpm@9.15.0 --activate
+
 # Copy root package files and lockfile
-COPY package.json bun.lock ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy ALL workspace package.json files
 COPY packages/adapters/package.json ./packages/adapters/
@@ -129,7 +146,7 @@ COPY packages/cli/package.json ./packages/cli/
 COPY packages/core/package.json ./packages/core/
 # docs-web source is NOT copied — it's a static site deployed separately
 # (see .github/workflows/deploy-docs.yml). package.json is included only
-# so Bun's workspace lockfile resolves correctly.
+# so the workspace lockfile resolves correctly.
 COPY packages/docs-web/package.json ./packages/docs-web/
 COPY packages/git/package.json ./packages/git/
 COPY packages/isolation/package.json ./packages/isolation/
@@ -140,7 +157,7 @@ COPY packages/web/package.json ./packages/web/
 COPY packages/workflows/package.json ./packages/workflows/
 
 # Install production dependencies only (--ignore-scripts skips husky prepare hook)
-RUN bun install --frozen-lockfile --production --ignore-scripts --linker=hoisted
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts --shamefully-hoist
 
 # Copy application source (Bun runs TypeScript directly, no compile step needed)
 COPY packages/adapters/ ./packages/adapters/

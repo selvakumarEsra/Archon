@@ -19,10 +19,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# This project uses Bun (bun.lock); npm/yarn lockfiles must not be committed.
+# This project uses pnpm (pnpm-lock.yaml); npm/yarn/bun lockfiles must not be committed.
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
+bun.lockb
 
 # ESLint cache
 .eslintcache

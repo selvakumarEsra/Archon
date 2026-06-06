@@ -92,7 +92,7 @@ export function WorkflowDagViewer({
           currentIteration: live?.currentIteration,
           maxIterations: live?.maxIterations,
         },
-      } as ExecutionFlowNode;
+      };
     });
   }, [baseNodes, statusMap, dagNodes, selectedNodeId]);
 

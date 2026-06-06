@@ -22,12 +22,7 @@
  *   the SDK switched to native binaries in the 0.2.x series. See
  *   `shouldPassNoEnvFile` for the implications on the `--no-env-file` flag.
  */
-import {
-  query,
-  type Options,
-  type HookCallback,
-  type HookCallbackMatcher,
-} from '@anthropic-ai/claude-agent-sdk';
+import { query, type Options, type HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 import type {
   IAgentProvider,
   SendQueryOptions,
@@ -420,7 +415,7 @@ async function applyNodeConfig(
     options.outputFormat = {
       type: 'json_schema',
       schema: nodeConfig.output_format,
-    } as Options['outputFormat'];
+    };
   }
 
   // maxBudgetUsd from nodeConfig
@@ -571,7 +566,7 @@ function buildToolCaptureHooks(toolResultQueue: ToolResultEntry[]): Options['hoo
     PostToolUse: [
       {
         hooks: [
-          (async (input: Record<string, unknown>): Promise<{ continue: true }> => {
+          async (input: Record<string, unknown>): Promise<{ continue: true }> => {
             try {
               const toolName = (input as { tool_name?: string }).tool_name ?? 'unknown';
               const toolUseId = (input as { tool_use_id?: string }).tool_use_id;
@@ -590,14 +585,14 @@ function buildToolCaptureHooks(toolResultQueue: ToolResultEntry[]): Options['hoo
               getLog().error({ err: e, input }, 'claude.post_tool_use_hook_error');
             }
             return { continue: true };
-          }) as HookCallback,
+          },
         ],
       },
     ],
     PostToolUseFailure: [
       {
         hooks: [
-          (async (input: Record<string, unknown>): Promise<{ continue: true }> => {
+          async (input: Record<string, unknown>): Promise<{ continue: true }> => {
             try {
               const toolName = (input as { tool_name?: string }).tool_name ?? 'unknown';
               const toolUseId = (input as { tool_use_id?: string }).tool_use_id;
@@ -617,7 +612,7 @@ function buildToolCaptureHooks(toolResultQueue: ToolResultEntry[]): Options['hoo
               getLog().error({ err: e, input }, 'claude.post_tool_use_failure_hook_error');
             }
             return { continue: true };
-          }) as HookCallback,
+          },
         ],
       },
     ],
@@ -745,9 +740,7 @@ async function* streamClaudeMessages(
         ...(resultMsg.total_cost_usd !== undefined ? { cost: resultMsg.total_cost_usd } : {}),
         ...(resultMsg.stop_reason != null ? { stopReason: resultMsg.stop_reason } : {}),
         ...(resultMsg.num_turns !== undefined ? { numTurns: resultMsg.num_turns } : {}),
-        ...(resultMsg.model_usage
-          ? { modelUsage: resultMsg.model_usage as Record<string, unknown> }
-          : {}),
+        ...(resultMsg.model_usage ? { modelUsage: resultMsg.model_usage } : {}),
       };
     }
   }
@@ -872,7 +865,7 @@ export class ClaudeProvider implements IAgentProvider {
     // so we compute them once and yield them before the first attempt.
     let nodeConfigWarnings: ProviderWarning[] = [];
     if (requestOptions?.nodeConfig) {
-      const tempOptions: Options = {} as Options;
+      const tempOptions: Options = {};
       nodeConfigWarnings = await applyNodeConfig(tempOptions, requestOptions.nodeConfig, cwd);
     }
 

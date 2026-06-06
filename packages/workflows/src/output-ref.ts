@@ -73,7 +73,7 @@ export function declaredFieldsFromSchema(
   if (!outputFormat) return undefined;
   const props = outputFormat.properties;
   if (props === null || typeof props !== 'object' || Array.isArray(props)) return undefined;
-  return Object.keys(props as Record<string, unknown>);
+  return Object.keys(props);
 }
 
 export type FieldResolution = { kind: 'value'; value: unknown } | { kind: 'empty' };

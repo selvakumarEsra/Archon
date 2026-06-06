@@ -10,12 +10,7 @@ import { readFile } from 'fs/promises';
 import { isAbsolute, join as joinPath, resolve as resolvePath } from 'path';
 import { execFileAsync } from '@archon/git';
 import { discoverScriptsForCwd } from './script-discovery';
-import type {
-  IWorkflowPlatform,
-  WorkflowMessageMetadata,
-  WorkflowConfig,
-  WorkflowDeps,
-} from './deps';
+import type { IWorkflowPlatform, WorkflowConfig, WorkflowDeps } from './deps';
 import type {
   SendQueryOptions,
   NodeConfig,
@@ -197,7 +192,7 @@ export async function loadConfiguredMcpServerNames(
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       return new Set();
     }
-    return new Set(Object.keys(parsed as Record<string, unknown>));
+    return new Set(Object.keys(parsed));
   } catch (err) {
     getLog().debug({ err, nodeMcpPath, fullPath }, 'dag.mcp_filter_config_read_failed');
     return new Set();
@@ -590,12 +585,11 @@ export function checkTriggerRule(
 
   const upstreams = nodeDeps.map(
     id =>
-      nodeOutputs.get(id) ??
-      ({
+      nodeOutputs.get(id) ?? {
         state: 'failed',
         output: '',
         error: `upstream '${id}' missing from outputs`,
-      } as NodeOutput)
+      }
   );
   const rule: TriggerRule = node.trigger_rule ?? 'all_success';
 
@@ -951,7 +945,7 @@ async function executeNodeInternal(
           const toolMsg = formatToolCall(msg.toolName, msg.toolInput);
           await safeSendMessage(platform, conversationId, toolMsg, nodeContext, {
             category: 'tool_call_formatted',
-          } as WorkflowMessageMetadata);
+          });
 
           // Send structured event to adapters that support it (Web UI)
           if (platform.sendStructuredEvent) {
@@ -2211,7 +2205,7 @@ async function executeLoopNode(
             if (toolMsg) {
               await safeSendMessage(platform, conversationId, toolMsg, msgContext, {
                 category: 'tool_call_formatted',
-              } as WorkflowMessageMetadata);
+              });
             }
             if (platform.sendStructuredEvent) {
               await platform.sendStructuredEvent(conversationId, msg);

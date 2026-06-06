@@ -75,12 +75,12 @@ Example:
 Commands and result summary:
 
 ```bash
-bun run type-check
-bun run lint
-bun run format:check
-bun run test
+pnpm run type-check
+pnpm run lint
+pnpm run format:check
+pnpm run test
 # Or all at once:
-bun run validate
+pnpm run validate
 ```
 
 - Evidence provided (test/log/trace/screenshot):
