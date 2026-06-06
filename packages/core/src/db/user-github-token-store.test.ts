@@ -1,15 +1,15 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 
 process.env.TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
-mock.module('./connection', () => ({
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
+vi.mock('./connection', () => ({
   pool: { query: mockQuery },
   getDialect: () => mockPostgresDialect,
 }));
 
-const mockRefresh = mock(async () => ({
+const mockRefresh = vi.fn(async () => ({
   access_token: 'ghu_refreshed',
   token_type: 'bearer',
   scope: '',
@@ -17,8 +17,8 @@ const mockRefresh = mock(async () => ({
   refresh_token: 'ghr_new',
   refresh_token_expires_in: 15897600,
 }));
-mock.module('../github-auth/device-flow', () => ({ refreshUserToken: mockRefresh }));
-mock.module('../github-auth/config', () => ({
+vi.mock('../github-auth/device-flow', () => ({ refreshUserToken: mockRefresh }));
+vi.mock('../github-auth/config', () => ({
   loadDeviceFlowConfig: () => ({ clientId: 'Iv1.test' }),
 }));
 

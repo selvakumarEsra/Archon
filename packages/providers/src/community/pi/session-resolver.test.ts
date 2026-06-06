@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { vi, beforeEach, describe, expect, test } from 'vitest';
 
 // ─── Mock SessionManager before import ─────────────────────────────────────
 
-const mockCreate = mock((_cwd: string) => ({ __kind: 'created' }));
-const mockOpen = mock((_path: string) => ({ __kind: 'opened' }));
-const mockList = mock(async (_cwd: string) => [] as { id: string; path: string; cwd: string }[]);
+const mockCreate = vi.fn((_cwd: string) => ({ __kind: 'created' }));
+const mockOpen = vi.fn((_path: string) => ({ __kind: 'opened' }));
+const mockList = vi.fn(async (_cwd: string) => [] as { id: string; path: string; cwd: string }[]);
 
-mock.module('@earendil-works/pi-coding-agent', () => ({
+vi.mock('@earendil-works/pi-coding-agent', () => ({
   SessionManager: {
     create: mockCreate,
     open: mockOpen,

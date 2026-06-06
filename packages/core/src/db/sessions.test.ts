@@ -1,17 +1,17 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { ZodError } from 'zod';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 import { Session, SessionMetadata, sessionMetadataSchema } from '../types';
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
-const mockWithTransaction = mock(
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
+const mockWithTransaction = vi.fn(
   async <T>(fn: (query: typeof mockQuery) => Promise<T>): Promise<T> => {
     return fn(mockQuery);
   }
 );
 
 // Mock the connection module before importing the module under test
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: {
     query: mockQuery,
   },

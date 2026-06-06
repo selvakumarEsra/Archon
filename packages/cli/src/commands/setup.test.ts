@@ -1,7 +1,7 @@
 /**
  * Tests for setup command utility functions
  */
-import { describe, it, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { existsSync, readFileSync, mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -554,9 +554,9 @@ describe('detectClaudeExecutablePath probe order', () => {
   let whichSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    fileExistsSpy = spyOn(setupModule, 'probeFileExists').mockReturnValue(false);
-    npmRootSpy = spyOn(setupModule, 'probeNpmRoot').mockReturnValue(null);
-    whichSpy = spyOn(setupModule, 'probeWhichClaude').mockReturnValue(null);
+    fileExistsSpy = vi.spyOn(setupModule, 'probeFileExists').mockReturnValue(false);
+    npmRootSpy = vi.spyOn(setupModule, 'probeNpmRoot').mockReturnValue(null);
+    whichSpy = vi.spyOn(setupModule, 'probeWhichClaude').mockReturnValue(null);
   });
 
   afterEach(() => {

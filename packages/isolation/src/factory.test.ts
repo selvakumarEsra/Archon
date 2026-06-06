@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from 'bun:test';
+import { describe, test, expect, afterEach } from 'vitest';
 import { getIsolationProvider, resetIsolationProvider, configureIsolation } from './factory';
 
 describe('Isolation Provider Factory', () => {

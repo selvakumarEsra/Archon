@@ -1,20 +1,20 @@
-import { describe, test, expect, beforeEach, mock, afterEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock logger before importing module under test
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => ({
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
   }),
 }));
 
 // Mock @archon/core/db/messages
-const mockAddMessage = mock(() => Promise.resolve());
-mock.module('@archon/core/db/messages', () => ({
+const mockAddMessage = vi.fn(() => Promise.resolve());
+vi.mock('@archon/core/db/messages', () => ({
   addMessage: mockAddMessage,
 }));
 
@@ -22,7 +22,7 @@ mock.module('@archon/core/db/messages', () => ({
 const { MessagePersistence } = await import('./persistence');
 
 function createPersistence(): InstanceType<typeof MessagePersistence> {
-  const emitEvent = mock(() => Promise.resolve());
+  const emitEvent = vi.fn(() => Promise.resolve());
   return new MessagePersistence(emitEvent);
 }
 

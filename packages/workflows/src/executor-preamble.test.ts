@@ -3,7 +3,7 @@
  * detection, and resume logic.  These run before DAG dispatch and are exercised
  * with minimal DAG workflow fixtures.
  */
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { WorkflowDeps, IWorkflowPlatform, WorkflowConfig } from './deps';
 import type { IWorkflowStore } from './store';
 import type { WorkflowDefinition, WorkflowRun } from './schemas';
@@ -12,7 +12,7 @@ import type { WorkflowDefinition, WorkflowRun } from './schemas';
 // Mock logger (must precede all module-under-test imports)
 // ---------------------------------------------------------------------------
 
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -20,33 +20,33 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  child: vi.fn(() => mockLogger),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  parseOwnerRepo: mock(() => null),
-  getRunArtifactsPath: mock(() => '/tmp/artifacts'),
-  getProjectLogsPath: mock(() => '/tmp/logs'),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  parseOwnerRepo: vi.fn(() => null),
+  getRunArtifactsPath: vi.fn(() => '/tmp/artifacts'),
+  getProjectLogsPath: vi.fn(() => '/tmp/logs'),
 }));
 
 // ---------------------------------------------------------------------------
 // Mock git
 // ---------------------------------------------------------------------------
 
-mock.module('@archon/git', () => ({
-  getDefaultBranch: mock(async () => 'main'),
-  toRepoPath: mock((p: string) => p),
+vi.mock('@archon/git', () => ({
+  getDefaultBranch: vi.fn(async () => 'main'),
+  toRepoPath: vi.fn((p: string) => p),
 }));
 
 // ---------------------------------------------------------------------------
 // Mock dag-executor (we only care about the preamble, not DAG execution)
 // ---------------------------------------------------------------------------
 
-const mockExecuteDagWorkflow = mock(async () => {});
-mock.module('./dag-executor', () => ({
+const mockExecuteDagWorkflow = vi.fn(async () => {});
+vi.mock('./dag-executor', () => ({
   executeDagWorkflow: mockExecuteDagWorkflow,
 }));
 
@@ -54,18 +54,18 @@ mock.module('./dag-executor', () => ({
 // Mock logger / event-emitter modules
 // ---------------------------------------------------------------------------
 
-mock.module('./logger', () => ({
-  logWorkflowStart: mock(async () => {}),
-  logWorkflowError: mock(async () => {}),
+vi.mock('./logger', () => ({
+  logWorkflowStart: vi.fn(async () => {}),
+  logWorkflowError: vi.fn(async () => {}),
 }));
 
 const mockEmitter = {
-  registerRun: mock(() => {}),
-  unregisterRun: mock(() => {}),
-  emit: mock(() => {}),
+  registerRun: vi.fn(() => {}),
+  unregisterRun: vi.fn(() => {}),
+  emit: vi.fn(() => {}),
 };
-mock.module('./event-emitter', () => ({
-  getWorkflowEventEmitter: mock(() => mockEmitter),
+vi.mock('./event-emitter', () => ({
+  getWorkflowEventEmitter: vi.fn(() => mockEmitter),
 }));
 
 // ---------------------------------------------------------------------------
@@ -88,34 +88,34 @@ import { executeWorkflow } from './executor';
 
 function makeStore(overrides: Partial<IWorkflowStore> = {}): IWorkflowStore {
   return {
-    getActiveWorkflowRunByPath: mock(async () => null),
-    failOrphanedRuns: mock(async () => ({ count: 0 })),
-    createWorkflowRun: mock(async () => makeRun()),
-    updateWorkflowRun: mock(async () => {}),
-    failWorkflowRun: mock(async () => {}),
-    getWorkflowRun: mock(async () => ({ ...makeRun(), status: 'completed' as const })),
-    getWorkflowRunStatus: mock(async () => 'completed' as const),
-    createWorkflowEvent: mock(async () => {}),
-    findResumableRun: mock(async () => null),
-    getCompletedDagNodeOutputs: mock(async () => new Map<string, string>()),
-    resumeWorkflowRun: mock(async () => makeRun()),
-    getCodebase: mock(async () => null),
-    getCodebaseEnvVars: mock(async () => ({})),
+    getActiveWorkflowRunByPath: vi.fn(async () => null),
+    failOrphanedRuns: vi.fn(async () => ({ count: 0 })),
+    createWorkflowRun: vi.fn(async () => makeRun()),
+    updateWorkflowRun: vi.fn(async () => {}),
+    failWorkflowRun: vi.fn(async () => {}),
+    getWorkflowRun: vi.fn(async () => ({ ...makeRun(), status: 'completed' as const })),
+    getWorkflowRunStatus: vi.fn(async () => 'completed' as const),
+    createWorkflowEvent: vi.fn(async () => {}),
+    findResumableRun: vi.fn(async () => null),
+    getCompletedDagNodeOutputs: vi.fn(async () => new Map<string, string>()),
+    resumeWorkflowRun: vi.fn(async () => makeRun()),
+    getCodebase: vi.fn(async () => null),
+    getCodebaseEnvVars: vi.fn(async () => ({})),
     ...overrides,
   };
 }
 
 function makePlatform(): IWorkflowPlatform & { sendMessage: ReturnType<typeof mock> } {
   return {
-    sendMessage: mock(async () => {}),
-    getPlatformType: mock(() => 'test' as const),
+    sendMessage: vi.fn(async () => {}),
+    getPlatformType: vi.fn(() => 'test' as const),
   } as unknown as IWorkflowPlatform & { sendMessage: ReturnType<typeof mock> };
 }
 
 function makeDeps(store?: IWorkflowStore): WorkflowDeps {
   return {
     store: store ?? makeStore(),
-    loadConfig: mock(
+    loadConfig: vi.fn(
       async (): Promise<WorkflowConfig> => ({
         assistant: 'claude' as const,
         assistants: { claude: {}, codex: {} },
@@ -123,8 +123,8 @@ function makeDeps(store?: IWorkflowStore): WorkflowDeps {
         commands: { folder: '' },
       })
     ),
-    getAgentProvider: mock(() => ({
-      run: mock(async () => {}),
+    getAgentProvider: vi.fn(() => ({
+      run: vi.fn(async () => {}),
     })),
   } as unknown as WorkflowDeps;
 }
@@ -186,9 +186,9 @@ describe('executeWorkflow preamble', () => {
         started_at: recentTime,
         status: 'running',
       });
-      const updateSpy = mock(async () => {});
+      const updateSpy = vi.fn(async () => {});
       const store = makeStore({
-        getActiveWorkflowRunByPath: mock(async () => activeRun),
+        getActiveWorkflowRunByPath: vi.fn(async () => activeRun),
         updateWorkflowRun: updateSpy,
       });
       const deps = makeDeps(store);
@@ -233,7 +233,7 @@ describe('executeWorkflow preamble', () => {
 
   describe('concurrent workflow detection', () => {
     it('should allow workflow when no active workflow for conversation', async () => {
-      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => null) });
+      const store = makeStore({ getActiveWorkflowRunByPath: vi.fn(async () => null) });
       const deps = makeDeps(store);
       const platform = makePlatform();
 
@@ -280,7 +280,7 @@ describe('executeWorkflow preamble', () => {
 
     it('should block workflow when active workflow check fails', async () => {
       const store = makeStore({
-        getActiveWorkflowRunByPath: mock(async () => {
+        getActiveWorkflowRunByPath: vi.fn(async () => {
           throw new Error('Database connection lost');
         }),
       });
@@ -324,7 +324,7 @@ describe('executeWorkflow preamble', () => {
       const resumedRun = makeRun({ id: 'prior-run', status: 'running' });
       const priorCompletedNodes = new Map([['node-a', 'output from node-a']]);
 
-      const findSpy = mock(async () => null);
+      const findSpy = vi.fn(async () => null);
       const store = makeStore({ findResumableRun: findSpy });
       const deps = makeDeps(store);
       const platform = makePlatform();

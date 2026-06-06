@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { toRun, normalizeOrigin } from './run';
 
 type Raw = Parameters<typeof toRun>[0];

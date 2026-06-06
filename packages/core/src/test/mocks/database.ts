@@ -1,5 +1,5 @@
 import type { QueryResult, QueryResultRow } from 'pg';
-import { mock, type Mock } from 'bun:test';
+import { vi, type Mock } from 'vitest';
 import type { SqlDialect } from '../../db/adapters/types';
 
 export interface MockPool {
@@ -7,7 +7,7 @@ export interface MockPool {
 }
 
 export const createMockPool = (): MockPool => ({
-  query: mock(() => Promise.resolve(createQueryResult([]))),
+  query: vi.fn(() => Promise.resolve(createQueryResult([]))),
 });
 
 export const mockPool = createMockPool();

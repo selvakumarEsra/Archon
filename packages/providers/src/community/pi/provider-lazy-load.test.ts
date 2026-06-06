@@ -19,17 +19,17 @@
  * process-wide and would poison `provider.test.ts`, which installs benign
  * stubs for the same modules (see CLAUDE.md on test isolation).
  */
-import { expect, mock, test } from 'bun:test';
+import { vi, expect, test } from 'vitest';
 
 // Counter-based detection — see the file header for why not `throw`.
 let piCodingAgentLoaded = false;
 let piAiLoaded = false;
 
-mock.module('@earendil-works/pi-coding-agent', () => {
+vi.mock('@earendil-works/pi-coding-agent', () => {
   piCodingAgentLoaded = true;
   return {};
 });
-mock.module('@earendil-works/pi-ai', () => {
+vi.mock('@earendil-works/pi-ai', () => {
   piAiLoaded = true;
   return {};
 });

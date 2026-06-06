@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock, spyOn, type Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach, type Mock } from 'vitest';
 import { writeFile, mkdir as realMkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
@@ -22,13 +22,13 @@ interface MockLogger {
 
 function createMockLogger(): MockLogger {
   const logger: MockLogger = {
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
-    child: mock(() => logger),
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
+    child: vi.fn(() => logger),
   };
   return logger;
 }
@@ -47,8 +47,8 @@ function getArchonHome(): string {
   return process.env.ARCHON_HOME ?? join(homedir(), '.archon');
 }
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
   getArchonWorktreesPath: () => join(getArchonHome(), 'worktrees'),
   getArchonWorkspacesPath: () => join(getArchonHome(), 'workspaces'),
   getProjectWorktreesPath: (owner: string, repo: string) =>
@@ -108,7 +108,7 @@ describe('git utilities', () => {
       await realMkdir(testPath, { recursive: true });
 
       const fsPromises = await import('fs/promises');
-      const readFileSpy = spyOn(fsPromises, 'readFile');
+      const readFileSpy = vi.spyOn(fsPromises, 'readFile');
       mockLogger.error.mockClear();
       const eaccesError = new Error('Permission denied') as NodeJS.ErrnoException;
       eaccesError.code = 'EACCES';
@@ -446,7 +446,7 @@ describe('git utilities', () => {
       await realMkdir(testPath, { recursive: true });
 
       const fsPromises = await import('fs/promises');
-      const accessSpy = spyOn(fsPromises, 'access');
+      const accessSpy = vi.spyOn(fsPromises, 'access');
       mockLogger.error.mockClear();
       const eaccesError = new Error('Permission denied') as NodeJS.ErrnoException;
       eaccesError.code = 'EACCES';
@@ -473,7 +473,7 @@ describe('git utilities', () => {
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -570,7 +570,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
       const mockOutput = `worktree /workspace/main
 HEAD abc123
 branch refs/heads/main
@@ -611,7 +611,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -696,7 +696,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -764,7 +764,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -903,7 +903,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1006,7 +1006,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1097,7 +1097,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1145,7 +1145,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1220,7 +1220,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1324,8 +1324,8 @@ branch refs/heads/feature/auth
     let getDefaultBranchSpy: Mock<typeof git.getDefaultBranch>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
-      getDefaultBranchSpy = spyOn(git, 'getDefaultBranch');
+      execSpy = vi.spyOn(git, 'execFileAsync');
+      getDefaultBranchSpy = vi.spyOn(git, 'getDefaultBranch');
       getDefaultBranchSpy.mockResolvedValue('main');
     });
 
@@ -1501,7 +1501,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1590,7 +1590,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1711,7 +1711,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1749,7 +1749,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1781,7 +1781,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1853,7 +1853,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {
@@ -1885,7 +1885,7 @@ branch refs/heads/feature/auth
     let execSpy: Mock<typeof git.execFileAsync>;
 
     beforeEach(() => {
-      execSpy = spyOn(git, 'execFileAsync');
+      execSpy = vi.spyOn(git, 'execFileAsync');
     });
 
     afterEach(() => {

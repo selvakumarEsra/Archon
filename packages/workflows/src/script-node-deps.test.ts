@@ -3,28 +3,28 @@
  *
  * These tests mock @archon/git's execFileAsync to verify command construction
  * without actually running uv/bun, and are isolated from dag-executor.test.ts
- * to avoid mock.module() pollution.
+ * to avoid vi.mock() pollution.
  */
-import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
 // --- Mock @archon/git BEFORE any imports that depend on it ---
 
-const mockExecFileAsync = mock(
+const mockExecFileAsync = vi.fn(
   async (_cmd: string, _args: string[], _opts?: unknown) =>
     ({ stdout: '', stderr: '' }) as { stdout: string; stderr: string }
 );
 
-mock.module('@archon/git', () => ({
+vi.mock('@archon/git', () => ({
   execFileAsync: mockExecFileAsync,
-  mkdirAsync: mock(async () => undefined),
+  mkdirAsync: vi.fn(async () => undefined),
 }));
 
 // --- Mock logger (MUST come before module-under-test imports) ---
 
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -32,10 +32,10 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
+  child: vi.fn(() => mockLogger),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
   getCommandFolderSearchPaths: (folder?: string) => {
     const paths = ['.archon/commands'];
     if (folder) paths.unshift(folder);
@@ -54,7 +54,7 @@ import type { IWorkflowStore } from './store';
 
 function createMockStore(): IWorkflowStore {
   return {
-    createWorkflowRun: mock(() =>
+    createWorkflowRun: vi.fn(() =>
       Promise.resolve({
         id: 'mock-run-id',
         workflow_name: 'mock',
@@ -70,11 +70,11 @@ function createMockStore(): IWorkflowStore {
         working_path: null,
       })
     ),
-    getWorkflowRun: mock(() => Promise.resolve(null)),
-    getActiveWorkflowRunByPath: mock(() => Promise.resolve(null)),
-    failOrphanedRuns: mock(() => Promise.resolve({ count: 0 })),
-    findResumableRun: mock(() => Promise.resolve(null)),
-    resumeWorkflowRun: mock(() =>
+    getWorkflowRun: vi.fn(() => Promise.resolve(null)),
+    getActiveWorkflowRunByPath: vi.fn(() => Promise.resolve(null)),
+    failOrphanedRuns: vi.fn(() => Promise.resolve({ count: 0 })),
+    findResumableRun: vi.fn(() => Promise.resolve(null)),
+    resumeWorkflowRun: vi.fn(() =>
       Promise.resolve({
         id: 'mock-run-id',
         workflow_name: 'mock',
@@ -90,26 +90,26 @@ function createMockStore(): IWorkflowStore {
         working_path: null,
       })
     ),
-    updateWorkflowRun: mock(() => Promise.resolve()),
-    updateWorkflowActivity: mock(() => Promise.resolve()),
-    getWorkflowRunStatus: mock(() => Promise.resolve('running' as const)),
-    completeWorkflowRun: mock(() => Promise.resolve()),
-    failWorkflowRun: mock(() => Promise.resolve()),
-    pauseWorkflowRun: mock(() => Promise.resolve()),
-    cancelWorkflowRun: mock(() => Promise.resolve()),
-    createWorkflowEvent: mock(() => Promise.resolve()),
-    getCompletedDagNodeOutputs: mock(() => Promise.resolve(new Map<string, string>())),
-    getCodebase: mock(() => Promise.resolve(null)),
-    getCodebaseEnvVars: mock(() => Promise.resolve({})),
+    updateWorkflowRun: vi.fn(() => Promise.resolve()),
+    updateWorkflowActivity: vi.fn(() => Promise.resolve()),
+    getWorkflowRunStatus: vi.fn(() => Promise.resolve('running' as const)),
+    completeWorkflowRun: vi.fn(() => Promise.resolve()),
+    failWorkflowRun: vi.fn(() => Promise.resolve()),
+    pauseWorkflowRun: vi.fn(() => Promise.resolve()),
+    cancelWorkflowRun: vi.fn(() => Promise.resolve()),
+    createWorkflowEvent: vi.fn(() => Promise.resolve()),
+    getCompletedDagNodeOutputs: vi.fn(() => Promise.resolve(new Map<string, string>())),
+    getCodebase: vi.fn(() => Promise.resolve(null)),
+    getCodebaseEnvVars: vi.fn(() => Promise.resolve({})),
   };
 }
 
-const mockSendQuery = mock(function* () {
+const mockSendQuery = vi.fn(function* () {
   yield { type: 'assistant', content: 'AI response' };
   yield { type: 'result', sessionId: 'session-id' };
 });
 
-const mockGetAgentProvider = mock(() => ({
+const mockGetAgentProvider = vi.fn(() => ({
   sendQuery: mockSendQuery,
   getType: () => 'claude',
 }));
@@ -118,7 +118,7 @@ function createMockDeps(): WorkflowDeps {
   return {
     store: createMockStore(),
     getAgentProvider: mockGetAgentProvider,
-    loadConfig: mock(() =>
+    loadConfig: vi.fn(() =>
       Promise.resolve({
         assistant: 'claude' as const,
         commands: {},
@@ -131,10 +131,10 @@ function createMockDeps(): WorkflowDeps {
 
 function createMockPlatform(): IWorkflowPlatform {
   return {
-    sendMessage: mock(() => Promise.resolve()),
-    getStreamingMode: mock(() => 'batch' as const),
-    getPlatformType: mock(() => 'test'),
-    sendStructuredEvent: mock(() => Promise.resolve()),
+    sendMessage: vi.fn(() => Promise.resolve()),
+    getStreamingMode: vi.fn(() => 'batch' as const),
+    getPlatformType: vi.fn(() => 'test'),
+    sendStructuredEvent: vi.fn(() => Promise.resolve()),
   };
 }
 

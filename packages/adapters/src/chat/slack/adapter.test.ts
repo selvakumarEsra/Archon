@@ -1,32 +1,32 @@
 /**
  * Unit tests for Slack adapter
  */
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
-import type { Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 
 // Mock logger to suppress noisy output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Create mock functions
-const mockPostMessage = mock(() => Promise.resolve(undefined));
-const mockReplies = mock(() => Promise.resolve({ messages: [] }));
-const mockUsersInfo = mock(() =>
+const mockPostMessage = vi.fn(() => Promise.resolve(undefined));
+const mockReplies = vi.fn(() => Promise.resolve({ messages: [] }));
+const mockUsersInfo = vi.fn(() =>
   Promise.resolve({
     user: {
       id: 'U123',
@@ -35,11 +35,11 @@ const mockUsersInfo = mock(() =>
     },
   })
 );
-const mockEvent = mock(() => {});
-const mockStart = mock(() => Promise.resolve(undefined));
-const mockStop = mock(() => Promise.resolve(undefined));
-const mockCommand = mock(() => {});
-const mockAction = mock(() => {});
+const mockEvent = vi.fn(() => {});
+const mockStart = vi.fn(() => Promise.resolve(undefined));
+const mockStop = vi.fn(() => Promise.resolve(undefined));
+const mockCommand = vi.fn(() => {});
+const mockAction = vi.fn(() => {});
 
 const mockApp = {
   client: {
@@ -61,8 +61,8 @@ const mockApp = {
 };
 
 // Mock @slack/bolt
-mock.module('@slack/bolt', () => ({
-  App: mock(() => mockApp),
+vi.mock('@slack/bolt', () => ({
+  App: vi.fn(() => mockApp),
   LogLevel: {
     INFO: 'info',
   },
@@ -447,8 +447,8 @@ describe('SlackAdapter', () => {
     }
 
     function makeSlashArgs(overrides: Record<string, unknown> = {}) {
-      const ack = mock(async () => {});
-      const respond = mock(async () => {});
+      const ack = vi.fn(async () => {});
+      const respond = vi.fn(async () => {});
       const fakeClient = { chat: { postMessage: mockPostMessage } };
       return {
         ack,
@@ -494,17 +494,17 @@ describe('SlackAdapter', () => {
       mockPostMessage.mockClear();
       mockCommand.mockClear();
       const adapter = new SlackAdapter('xoxb-fake', 'xapp-fake');
-      const onMessage = mock(async () => {});
+      const onMessage = vi.fn(async () => {});
       adapter.onMessage(onMessage);
       await adapter.start();
 
       // Reject the seed post — adapter must surface an ephemeral error and
       // never invoke the message handler with an undefined ts.
       const seedError = new Error('not_in_channel');
-      const failingPost = mock(async () => Promise.reject(seedError));
+      const failingPost = vi.fn(async () => Promise.reject(seedError));
       const fakeClient = { chat: { postMessage: failingPost } };
-      const ack = mock(async () => {});
-      const respond = mock(async () => {});
+      const ack = vi.fn(async () => {});
+      const respond = vi.fn(async () => {});
 
       const handler = findCommandHandler('/archon');
       await handler({

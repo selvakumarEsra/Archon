@@ -1,22 +1,22 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import type { IWorkflowStore } from '@archon/workflows/store';
 
 // Mock DB modules before importing store-adapter
-const mockCreateWorkflowRun = mock(() => Promise.resolve({ id: 'run-1' }));
-const mockGetWorkflowRun = mock(() => Promise.resolve(null));
-const mockGetActiveWorkflowRunByPath = mock(() => Promise.resolve(null));
-const mockFailOrphanedRuns = mock(() => Promise.resolve({ count: 0 }));
-const mockFindResumableRun = mock(() => Promise.resolve(null));
-const mockResumeWorkflowRun = mock(() => Promise.resolve({ id: 'run-1' }));
-const mockUpdateWorkflowRun = mock(() => Promise.resolve());
-const mockUpdateWorkflowActivity = mock(() => Promise.resolve());
-const mockGetWorkflowRunStatus = mock(() => Promise.resolve('running'));
-const mockCompleteWorkflowRun = mock(() => Promise.resolve());
-const mockFailWorkflowRun = mock(() => Promise.resolve());
-const mockCancelWorkflowRun = mock(() => Promise.resolve());
-const mockPauseWorkflowRun = mock(() => Promise.resolve());
+const mockCreateWorkflowRun = vi.fn(() => Promise.resolve({ id: 'run-1' }));
+const mockGetWorkflowRun = vi.fn(() => Promise.resolve(null));
+const mockGetActiveWorkflowRunByPath = vi.fn(() => Promise.resolve(null));
+const mockFailOrphanedRuns = vi.fn(() => Promise.resolve({ count: 0 }));
+const mockFindResumableRun = vi.fn(() => Promise.resolve(null));
+const mockResumeWorkflowRun = vi.fn(() => Promise.resolve({ id: 'run-1' }));
+const mockUpdateWorkflowRun = vi.fn(() => Promise.resolve());
+const mockUpdateWorkflowActivity = vi.fn(() => Promise.resolve());
+const mockGetWorkflowRunStatus = vi.fn(() => Promise.resolve('running'));
+const mockCompleteWorkflowRun = vi.fn(() => Promise.resolve());
+const mockFailWorkflowRun = vi.fn(() => Promise.resolve());
+const mockCancelWorkflowRun = vi.fn(() => Promise.resolve());
+const mockPauseWorkflowRun = vi.fn(() => Promise.resolve());
 
-mock.module('../db/workflows', () => ({
+vi.mock('../db/workflows', () => ({
   createWorkflowRun: mockCreateWorkflowRun,
   getWorkflowRun: mockGetWorkflowRun,
   getActiveWorkflowRunByPath: mockGetActiveWorkflowRunByPath,
@@ -32,24 +32,24 @@ mock.module('../db/workflows', () => ({
   pauseWorkflowRun: mockPauseWorkflowRun,
 }));
 
-const mockCreateWorkflowEvent = mock(() => Promise.resolve());
-const mockGetCompletedDagNodeOutputs = mock(() => Promise.resolve(new Map<string, string>()));
-mock.module('../db/workflow-events', () => ({
+const mockCreateWorkflowEvent = vi.fn(() => Promise.resolve());
+const mockGetCompletedDagNodeOutputs = vi.fn(() => Promise.resolve(new Map<string, string>()));
+vi.mock('../db/workflow-events', () => ({
   createWorkflowEvent: mockCreateWorkflowEvent,
   getCompletedDagNodeOutputs: mockGetCompletedDagNodeOutputs,
 }));
 
-const mockGetCodebase = mock(() => Promise.resolve(null));
-mock.module('../db/codebases', () => ({
+const mockGetCodebase = vi.fn(() => Promise.resolve(null));
+vi.mock('../db/codebases', () => ({
   getCodebase: mockGetCodebase,
 }));
 
-mock.module('@archon/providers', () => ({
-  getAgentProvider: mock(() => ({})),
+vi.mock('@archon/providers', () => ({
+  getAgentProvider: vi.fn(() => ({})),
 }));
 
-mock.module('../config/config-loader', () => ({
-  loadConfig: mock(() => Promise.resolve({ assistant: 'claude' })),
+vi.mock('../config/config-loader', () => ({
+  loadConfig: vi.fn(() => Promise.resolve({ assistant: 'claude' })),
 }));
 
 const { createWorkflowStore, createWorkflowDeps } = await import('./store-adapter');

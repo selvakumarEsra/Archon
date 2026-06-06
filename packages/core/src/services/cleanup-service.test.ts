@@ -1,20 +1,20 @@
-import { mock, describe, test, expect, beforeEach, afterAll } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterAll } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 // Mock logger to suppress noisy output during tests
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Mock @archon/git - the cleanup service imports git functions from @archon/git
-const mockExecFileAsync = mock(() => Promise.resolve({ stdout: '', stderr: '' }));
-const mockHasUncommittedChanges = mock(() => Promise.resolve(false));
-const mockWorktreeExists = mock(() => Promise.resolve(false));
-const mockGetDefaultBranch = mock(() => Promise.resolve('main'));
-const mockIsBranchMerged = mock(() => Promise.resolve(false));
-const mockIsPatchEquivalent = mock(() => Promise.resolve(false));
-const mockGetLastCommitDate = mock(() => Promise.resolve(null as Date | null));
-mock.module('@archon/git', () => ({
+const mockExecFileAsync = vi.fn(() => Promise.resolve({ stdout: '', stderr: '' }));
+const mockHasUncommittedChanges = vi.fn(() => Promise.resolve(false));
+const mockWorktreeExists = vi.fn(() => Promise.resolve(false));
+const mockGetDefaultBranch = vi.fn(() => Promise.resolve('main'));
+const mockIsBranchMerged = vi.fn(() => Promise.resolve(false));
+const mockIsPatchEquivalent = vi.fn(() => Promise.resolve(false));
+const mockGetLastCommitDate = vi.fn(() => Promise.resolve(null as Date | null));
+vi.mock('@archon/git', () => ({
   execFileAsync: mockExecFileAsync,
   hasUncommittedChanges: mockHasUncommittedChanges,
   worktreeExists: mockWorktreeExists,
@@ -28,7 +28,7 @@ mock.module('@archon/git', () => ({
 }));
 
 // Mock isolation provider
-const mockDestroy = mock(() =>
+const mockDestroy = vi.fn(() =>
   Promise.resolve({
     worktreeRemoved: true,
     branchDeleted: true,
@@ -37,14 +37,14 @@ const mockDestroy = mock(() =>
     warnings: [],
   })
 );
-mock.module('../isolation', () => ({
+vi.mock('../isolation', () => ({
   getIsolationProvider: () => ({
     destroy: mockDestroy,
   }),
 }));
 type PrStateValue = 'MERGED' | 'CLOSED' | 'OPEN' | 'NONE';
-const mockGetPrState = mock(() => Promise.resolve('NONE' as PrStateValue));
-mock.module('@archon/isolation', () => ({
+const mockGetPrState = vi.fn(() => Promise.resolve('NONE' as PrStateValue));
+vi.mock('@archon/isolation', () => ({
   getIsolationProvider: () => ({
     destroy: mockDestroy,
   }),
@@ -52,14 +52,14 @@ mock.module('@archon/isolation', () => ({
 }));
 
 // Mock isolation-environments DB
-const mockListAllActiveWithCodebase = mock(() => Promise.resolve([]));
-const mockUpdateStatus = mock(() => Promise.resolve());
-const mockGetConversationsUsingEnv = mock(() => Promise.resolve([]));
-const mockGetById = mock(() => Promise.resolve(null));
-const mockListByCodebase = mock(() => Promise.resolve([]));
-const mockListByCodebaseWithAge = mock(() => Promise.resolve([]));
-const mockCountActiveByCodebase = mock(() => Promise.resolve(0));
-mock.module('../db/isolation-environments', () => ({
+const mockListAllActiveWithCodebase = vi.fn(() => Promise.resolve([]));
+const mockUpdateStatus = vi.fn(() => Promise.resolve());
+const mockGetConversationsUsingEnv = vi.fn(() => Promise.resolve([]));
+const mockGetById = vi.fn(() => Promise.resolve(null));
+const mockListByCodebase = vi.fn(() => Promise.resolve([]));
+const mockListByCodebaseWithAge = vi.fn(() => Promise.resolve([]));
+const mockCountActiveByCodebase = vi.fn(() => Promise.resolve(0));
+vi.mock('../db/isolation-environments', () => ({
   listAllActiveWithCodebase: mockListAllActiveWithCodebase,
   updateStatus: mockUpdateStatus,
   getConversationsUsingEnv: mockGetConversationsUsingEnv,
@@ -70,26 +70,26 @@ mock.module('../db/isolation-environments', () => ({
 }));
 
 // Mock conversations DB
-const mockGetConversationByPlatformId = mock(() => Promise.resolve(null));
-const mockUpdateConversation = mock(() => Promise.resolve());
-mock.module('../db/conversations', () => ({
+const mockGetConversationByPlatformId = vi.fn(() => Promise.resolve(null));
+const mockUpdateConversation = vi.fn(() => Promise.resolve());
+vi.mock('../db/conversations', () => ({
   getConversationByPlatformId: mockGetConversationByPlatformId,
   updateConversation: mockUpdateConversation,
 }));
 
 // Mock sessions DB
-const mockGetActiveSession = mock(() => Promise.resolve(null));
-const mockDeactivateSession = mock(() => Promise.resolve());
-const mockDeleteOldSessions = mock(() => Promise.resolve(0));
-mock.module('../db/sessions', () => ({
+const mockGetActiveSession = vi.fn(() => Promise.resolve(null));
+const mockDeactivateSession = vi.fn(() => Promise.resolve());
+const mockDeleteOldSessions = vi.fn(() => Promise.resolve(0));
+vi.mock('../db/sessions', () => ({
   getActiveSession: mockGetActiveSession,
   deactivateSession: mockDeactivateSession,
   deleteOldSessions: mockDeleteOldSessions,
 }));
 
 // Mock codebases DB
-const mockGetCodebase = mock(() => Promise.resolve(null));
-mock.module('../db/codebases', () => ({
+const mockGetCodebase = vi.fn(() => Promise.resolve(null));
+vi.mock('../db/codebases', () => ({
   getCodebase: mockGetCodebase,
 }));
 

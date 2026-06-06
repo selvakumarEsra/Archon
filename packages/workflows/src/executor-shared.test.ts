@@ -1,7 +1,7 @@
-import { describe, it, expect, mock } from 'bun:test';
+import { vi, describe, it, expect } from 'vitest';
 
 // Mock logger before importing module under test
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -9,13 +9,13 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  child: vi.fn(() => mockLogger),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 import type { IWorkflowPlatform } from './deps';
@@ -665,8 +665,8 @@ describe('classifyError', () => {
 
 describe('safeSendMessage', () => {
   const makePlatform = (impl: () => Promise<void>) => ({
-    sendMessage: mock(impl),
-    getPlatformType: mock(() => 'test'),
+    sendMessage: vi.fn(impl),
+    getPlatformType: vi.fn(() => 'test'),
   });
 
   it('returns true and resets tracker to 0 on success', async () => {
@@ -740,10 +740,10 @@ describe('safeSendMessage', () => {
     ];
     let callCount = 0;
     const platform = {
-      sendMessage: mock(async () => {
+      sendMessage: vi.fn(async () => {
         throw errors[callCount++];
       }),
-      getPlatformType: mock(() => 'test'),
+      getPlatformType: vi.fn(() => 'test'),
     };
     const tracker: UnknownErrorTracker = { count: 0 };
 

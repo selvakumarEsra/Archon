@@ -6,7 +6,7 @@
  * in @archon/core that mocks @octokit/rest, and it's slotted as its own
  * `bun test` invocation in package.json's test script for isolation.
  */
-import { mock, spyOn, describe, test, expect, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,7 +18,7 @@ const lastOctokitInit = { current: undefined as unknown };
 // to queue responses in call order. The 'GET /repos/.../installation' and
 // 'POST /app/installations/.../access_tokens' endpoints share this queue, so
 // queue responses in execution order.
-const mockRequest = mock(async (..._args: unknown[]) => ({
+const mockRequest = vi.fn(async (..._args: unknown[]) => ({
   status: 200,
   data: {},
 }));
@@ -31,14 +31,14 @@ class FakeOctokit {
   request = mockRequest;
 }
 
-mock.module('@octokit/rest', () => ({ Octokit: FakeOctokit }));
+vi.mock('@octokit/rest', () => ({ Octokit: FakeOctokit }));
 
 // The real @octokit/auth-app exports `createAppAuth`; we don't actually exercise
 // it in the cache/lookup paths (those go through Octokit.request), but the
 // factory still passes `authStrategy: createAppAuth` to Octokit, so the symbol
 // has to exist.
-const mockCreateAppAuth = mock(() => async () => ({ token: 'mock-jwt' }));
-mock.module('@octokit/auth-app', () => ({
+const mockCreateAppAuth = vi.fn(() => async () => ({ token: 'mock-jwt' }));
+vi.mock('@octokit/auth-app', () => ({
   createAppAuth: mockCreateAppAuth,
 }));
 
@@ -326,7 +326,7 @@ describe('cache TTL boundaries', () => {
     // spyOn restores cleanly in afterEach via mockRestore; avoids direct
     // mutation of the Date.now reference (and the eslint-disable that came
     // with it).
-    const nowSpy = spyOn(Date, 'now').mockImplementation(() => mockedNow);
+    const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => mockedNow);
 
     try {
       const provider = makeProvider();

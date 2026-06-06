@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'bun:test';
+import { describe, it, expect, afterEach } from 'vitest';
 import { calculatePortOffset, getPort } from './port-allocation';
 
 // Test the exported hash calculation function directly

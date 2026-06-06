@@ -1,18 +1,18 @@
-import { describe, it, expect, mock, beforeEach, afterEach, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock @archon/paths BEFORE importing the module under test.
 // This sets BUNDLED_IS_BINARY = false (dev mode) so serveCommand rejects.
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getWebDistDir: mock((version: string) => `/tmp/test-archon/web-dist/${version}`),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getWebDistDir: vi.fn((version: string) => `/tmp/test-archon/web-dist/${version}`),
   BUNDLED_IS_BINARY: false,
   BUNDLED_VERSION: 'dev',
 }));
@@ -72,7 +72,7 @@ describe('serveCommand', () => {
   let consoleErrorSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

@@ -1,11 +1,11 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
 
 // Mock the connection module before importing the module under test
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: {
     query: mockQuery,
   },

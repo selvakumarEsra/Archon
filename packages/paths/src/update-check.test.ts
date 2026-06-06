@@ -1,4 +1,4 @@
-import { describe, test, expect, spyOn, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'path';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
@@ -102,7 +102,7 @@ describe('checkForUpdate', () => {
     };
     writeFileSync(join(testDir, 'update-check.json'), JSON.stringify(cache));
 
-    const fetchSpy = spyOn(globalThis, 'fetch');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const result = await checkForUpdate('0.4.0');
 
     expect(result).toEqual({
@@ -116,7 +116,7 @@ describe('checkForUpdate', () => {
   });
 
   test('fetches from GitHub when no cache exists', async () => {
-    const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
           tag_name: 'v0.5.0',
@@ -145,7 +145,7 @@ describe('checkForUpdate', () => {
   });
 
   test('returns null on network error', async () => {
-    const fetchSpy = spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
 
     const result = await checkForUpdate('0.4.0');
 
@@ -154,9 +154,9 @@ describe('checkForUpdate', () => {
   });
 
   test('returns null on non-200 HTTP response', async () => {
-    const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('{"message":"rate limit exceeded"}', { status: 403 })
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{"message":"rate limit exceeded"}', { status: 403 }));
 
     const result = await checkForUpdate('0.4.0');
 
@@ -186,7 +186,7 @@ describe('checkForUpdate', () => {
     };
     writeFileSync(join(testDir, 'update-check.json'), JSON.stringify(staleCache));
 
-    const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
           tag_name: 'v0.5.0',

@@ -2,29 +2,29 @@
  * Unit tests for Telegram adapter
  *
  * Note: We use the real telegram-markdown module instead of mocking it.
- * Mocking internal modules with mock.module() causes test isolation issues
+ * Mocking internal modules with vi.mock() causes test isolation issues
  * since the mock persists across test files.
  */
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
-import type { Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 
 // Mock logger to suppress noisy output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 import { TelegramAdapter } from './adapter';
@@ -62,7 +62,7 @@ describe('TelegramAdapter', () => {
 
     beforeEach(() => {
       adapter = new TelegramAdapter('fake-token-for-testing');
-      mockSendMessage = mock(() => Promise.resolve());
+      mockSendMessage = vi.fn(() => Promise.resolve());
       // Override bot's sendMessage
       (adapter.getBot().api as unknown as { sendMessage: Mock<() => Promise<void>> }).sendMessage =
         mockSendMessage;
@@ -237,7 +237,7 @@ describe('TelegramAdapter', () => {
   describe('stop()', () => {
     test('should call bot.stop()', () => {
       const adapter = new TelegramAdapter('fake-token-for-testing');
-      const mockStop = mock(() => undefined);
+      const mockStop = vi.fn(() => undefined);
       (adapter.getBot() as unknown as { stop: typeof mockStop }).stop = mockStop;
       adapter.stop();
       expect(mockStop).toHaveBeenCalledTimes(1);

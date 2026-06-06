@@ -1,7 +1,7 @@
 /**
  * Tests for workflow commands
  */
-import { describe, it, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { WorkflowEmitterEvent } from '@archon/workflows/event-emitter';
 import { makeTestWorkflowWithSource } from '@archon/workflows/test-utils';
 import {
@@ -20,27 +20,27 @@ import {
 } from './workflow';
 
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(() => mockLogger),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(() => mockLogger),
 };
 
 // Mock @archon/paths (createLogger moved here from @archon/core)
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonHome: mock(() => '/home/test/.archon'),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonHome: vi.fn(() => '/home/test/.archon'),
   BUNDLED_IS_BINARY: false,
 }));
 
 // Mock @archon/isolation (getIsolationProvider moved here from @archon/core)
-mock.module('@archon/isolation', () => ({
-  configureIsolation: mock(() => undefined),
-  getIsolationProvider: mock(() => ({
-    create: mock(() =>
+vi.mock('@archon/isolation', () => ({
+  configureIsolation: vi.fn(() => undefined),
+  getIsolationProvider: vi.fn(() => ({
+    create: vi.fn(() =>
       Promise.resolve({
         provider: 'worktree',
         id: '/test/path',
@@ -51,13 +51,13 @@ mock.module('@archon/isolation', () => ({
         metadata: { adopted: false },
       })
     ),
-    healthCheck: mock(() => Promise.resolve(true)),
+    healthCheck: vi.fn(() => Promise.resolve(true)),
   })),
 }));
 
 // Mock the @archon/core modules
-mock.module('@archon/core', () => ({
-  registerRepository: mock(() =>
+vi.mock('@archon/core', () => ({
+  registerRepository: vi.fn(() =>
     Promise.resolve({
       codebaseId: 'cb-auto',
       name: 'test/repo',
@@ -67,29 +67,29 @@ mock.module('@archon/core', () => ({
       alreadyExisted: false,
     })
   ),
-  loadConfig: mock(() => Promise.resolve({ defaults: {} })),
-  generateAndSetTitle: mock(() => Promise.resolve()),
-  loadRepoConfig: mock(() => Promise.resolve(null)),
-  createWorkflowStore: mock(() => ({
-    createWorkflowEvent: mock(() => Promise.resolve()),
+  loadConfig: vi.fn(() => Promise.resolve({ defaults: {} })),
+  generateAndSetTitle: vi.fn(() => Promise.resolve()),
+  loadRepoConfig: vi.fn(() => Promise.resolve(null)),
+  createWorkflowStore: vi.fn(() => ({
+    createWorkflowEvent: vi.fn(() => Promise.resolve()),
   })),
 }));
 
-mock.module('@archon/workflows/workflow-discovery', () => ({
-  discoverWorkflowsWithConfig: mock(() => Promise.resolve({ workflows: [], errors: [] })),
+vi.mock('@archon/workflows/workflow-discovery', () => ({
+  discoverWorkflowsWithConfig: vi.fn(() => Promise.resolve({ workflows: [], errors: [] })),
 }));
-mock.module('@archon/workflows/executor', () => ({
-  executeWorkflow: mock(() => Promise.resolve({ success: true, workflowRunId: 'test-run-id' })),
-  hydrateResumableRun: mock(() => Promise.resolve(null)),
+vi.mock('@archon/workflows/executor', () => ({
+  executeWorkflow: vi.fn(() => Promise.resolve({ success: true, workflowRunId: 'test-run-id' })),
+  hydrateResumableRun: vi.fn(() => Promise.resolve(null)),
 }));
 
 // Capture the subscription handler so tests can trigger events
 let capturedSubscribeHandler: ((event: WorkflowEmitterEvent) => void) | null = null;
-const mockUnsubscribe = mock(() => undefined);
+const mockUnsubscribe = vi.fn(() => undefined);
 
-mock.module('@archon/workflows/event-emitter', () => ({
-  getWorkflowEventEmitter: mock(() => ({
-    subscribeForConversation: mock(
+vi.mock('@archon/workflows/event-emitter', () => ({
+  getWorkflowEventEmitter: vi.fn(() => ({
+    subscribeForConversation: vi.fn(
       (_convId: string, handler: (event: WorkflowEmitterEvent) => void) => {
         capturedSubscribeHandler = handler;
         return mockUnsubscribe;
@@ -98,78 +98,78 @@ mock.module('@archon/workflows/event-emitter', () => ({
   })),
 }));
 
-mock.module('@archon/git', () => ({
-  findRepoRoot: mock(() => Promise.resolve(null)),
-  getRemoteUrl: mock(() => Promise.resolve(null)),
-  checkout: mock(() => Promise.resolve()),
-  toRepoPath: mock((path: string) => path),
-  toWorktreePath: mock((path: string) => path),
-  toBranchName: mock((branch: string) => branch),
-  getDefaultBranch: mock(() => Promise.resolve('dev')),
-  isAncestorOf: mock(() => Promise.resolve(true)),
+vi.mock('@archon/git', () => ({
+  findRepoRoot: vi.fn(() => Promise.resolve(null)),
+  getRemoteUrl: vi.fn(() => Promise.resolve(null)),
+  checkout: vi.fn(() => Promise.resolve()),
+  toRepoPath: vi.fn((path: string) => path),
+  toWorktreePath: vi.fn((path: string) => path),
+  toBranchName: vi.fn((branch: string) => branch),
+  getDefaultBranch: vi.fn(() => Promise.resolve('dev')),
+  isAncestorOf: vi.fn(() => Promise.resolve(true)),
 }));
 
-mock.module('@archon/core/db/conversations', () => ({
-  getOrCreateConversation: mock(() =>
+vi.mock('@archon/core/db/conversations', () => ({
+  getOrCreateConversation: vi.fn(() =>
     Promise.resolve({ id: 'conv-123', platform_type: 'cli', platform_conversation_id: 'cli-123' })
   ),
-  getConversationById: mock(() => Promise.resolve(null)),
-  updateConversation: mock(() => Promise.resolve()),
+  getConversationById: vi.fn(() => Promise.resolve(null)),
+  updateConversation: vi.fn(() => Promise.resolve()),
 }));
 
-mock.module('@archon/core/db/codebases', () => ({
-  findCodebaseByDefaultCwd: mock(() => Promise.resolve(null)),
-  getCodebase: mock(() => Promise.resolve(null)),
+vi.mock('@archon/core/db/codebases', () => ({
+  findCodebaseByDefaultCwd: vi.fn(() => Promise.resolve(null)),
+  getCodebase: vi.fn(() => Promise.resolve(null)),
 }));
 
-mock.module('@archon/core/db/isolation-environments', () => ({
-  findActiveByWorkflow: mock(() => Promise.resolve(null)),
-  create: mock(() => Promise.resolve({ id: 'iso-123' })),
+vi.mock('@archon/core/db/isolation-environments', () => ({
+  findActiveByWorkflow: vi.fn(() => Promise.resolve(null)),
+  create: vi.fn(() => Promise.resolve({ id: 'iso-123' })),
 }));
 
-mock.module('@archon/core/db/messages', () => ({
-  addMessage: mock(() => Promise.resolve()),
+vi.mock('@archon/core/db/messages', () => ({
+  addMessage: vi.fn(() => Promise.resolve()),
 }));
 
-mock.module('@archon/core/db/workflows', () => ({
-  getActiveWorkflowRun: mock(() => Promise.resolve(null)),
-  failWorkflowRun: mock(() => Promise.resolve()),
-  cancelWorkflowRun: mock(() => Promise.resolve()),
-  findResumableRun: mock(() => Promise.resolve(null)),
-  resumeWorkflowRun: mock(() => Promise.resolve(null)),
-  getWorkflowRun: mock(() => Promise.resolve(null)),
-  updateWorkflowRun: mock(() => Promise.resolve()),
-  listWorkflowRuns: mock(() => Promise.resolve([])),
-  listDashboardRuns: mock(() =>
+vi.mock('@archon/core/db/workflows', () => ({
+  getActiveWorkflowRun: vi.fn(() => Promise.resolve(null)),
+  failWorkflowRun: vi.fn(() => Promise.resolve()),
+  cancelWorkflowRun: vi.fn(() => Promise.resolve()),
+  findResumableRun: vi.fn(() => Promise.resolve(null)),
+  resumeWorkflowRun: vi.fn(() => Promise.resolve(null)),
+  getWorkflowRun: vi.fn(() => Promise.resolve(null)),
+  updateWorkflowRun: vi.fn(() => Promise.resolve()),
+  listWorkflowRuns: vi.fn(() => Promise.resolve([])),
+  listDashboardRuns: vi.fn(() =>
     Promise.resolve({
       runs: [],
       total: 0,
       counts: { all: 0, running: 0, completed: 0, failed: 0, cancelled: 0, pending: 0, paused: 0 },
     })
   ),
-  deleteOldWorkflowRuns: mock(() => Promise.resolve({ count: 0 })),
+  deleteOldWorkflowRuns: vi.fn(() => Promise.resolve({ count: 0 })),
 }));
 
-mock.module('@archon/core/db/workflow-events', () => ({
-  listWorkflowEvents: mock(() => Promise.resolve([])),
-  createWorkflowEvent: mock(() => Promise.resolve()),
+vi.mock('@archon/core/db/workflow-events', () => ({
+  listWorkflowEvents: vi.fn(() => Promise.resolve([])),
+  createWorkflowEvent: vi.fn(() => Promise.resolve()),
 }));
 
 // Reset-sessions runs the real resetWorkflowNodeSessions operation over this mocked
 // DB layer (same pattern as the other workflow commands in this file). Safe from
 // mock.module pollution: workflow.test.ts is its own isolated `bun test` invocation.
-const mockDeleteNodeSessions = mock(() => Promise.resolve({ deleted: 0 }));
-mock.module('@archon/core/db/workflow-node-sessions', () => ({
+const mockDeleteNodeSessions = vi.fn(() => Promise.resolve({ deleted: 0 }));
+vi.mock('@archon/core/db/workflow-node-sessions', () => ({
   deleteWorkflowNodeSessions: mockDeleteNodeSessions,
-  getWorkflowNodeSession: mock(() => Promise.resolve(null)),
-  upsertWorkflowNodeSession: mock(() => Promise.resolve()),
+  getWorkflowNodeSession: vi.fn(() => Promise.resolve(null)),
+  upsertWorkflowNodeSession: vi.fn(() => Promise.resolve()),
 }));
 
 describe('workflowListCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -363,7 +363,7 @@ describe('workflowRunCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     mockLogger.warn.mockClear();
     mockLogger.info.mockClear();
   });
@@ -1239,7 +1239,7 @@ describe('workflowRunCommand', () => {
       workflowRunId: 'run-123',
     });
 
-    const consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       await workflowRunCommand('/test/path', 'assist', 'hello', { branchName: 'my-feature' });
       expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining("not based on 'dev'"));
@@ -1280,7 +1280,7 @@ describe('workflowRunCommand', () => {
       workflowRunId: 'run-123',
     });
 
-    const consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       await workflowRunCommand('/test/path', 'assist', 'hello', { branchName: 'my-feature' });
       const baseBranchWarnCalls = consoleWarnSpy.mock.calls.filter(
@@ -1515,7 +1515,7 @@ describe('workflowRunCommand', () => {
     });
     (messagesDb.addMessage as ReturnType<typeof mock>).mockClear();
 
-    const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
       await workflowRunCommand('/test/path', 'assist', 'hello', { noWorktree: true });
 
@@ -1540,7 +1540,7 @@ describe('workflowStatusCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -1744,7 +1744,7 @@ describe('workflowGetCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -1869,7 +1869,7 @@ describe('workflowRunsCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2004,7 +2004,7 @@ describe('write command --json output', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2141,7 +2141,7 @@ describe('workflowRunCommand — detach', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2162,8 +2162,8 @@ describe('workflowRunCommand — detach', () => {
     });
 
     const execBefore = (executeWorkflow as ReturnType<typeof mock>).mock.calls.length;
-    const spawnSpy = spyOn(Bun, 'spawn').mockReturnValue({
-      unref: mock(() => undefined),
+    const spawnSpy = vi.spyOn(Bun, 'spawn').mockReturnValue({
+      unref: vi.fn(() => undefined),
     } as unknown as ReturnType<typeof Bun.spawn>);
     const savedArgv = process.argv;
     process.argv = ['bun', '/abs/cli.ts', 'workflow', 'run', 'assist', 'hello', '--detach'];
@@ -2206,8 +2206,8 @@ describe('workflowRunCommand — detach', () => {
     (paths.getArchonHome as ReturnType<typeof mock>).mockImplementationOnce(() => {
       throw new Error('no home in test');
     });
-    const spawnSpy = spyOn(Bun, 'spawn').mockReturnValue({
-      unref: mock(() => undefined),
+    const spawnSpy = vi.spyOn(Bun, 'spawn').mockReturnValue({
+      unref: vi.fn(() => undefined),
     } as unknown as ReturnType<typeof Bun.spawn>);
     const savedArgv = process.argv;
     process.argv = [
@@ -2285,7 +2285,7 @@ describe('workflowResumeCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2504,7 +2504,7 @@ describe('workflowApproveCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2537,7 +2537,7 @@ describe('workflowApproveCommand', () => {
     });
 
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: vi.fn(() => Promise.resolve()),
     });
 
     (
@@ -2634,7 +2634,7 @@ describe('workflowApproveCommand', () => {
     });
 
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: vi.fn(() => Promise.resolve()),
     });
 
     (codebaseDb.getCodebase as ReturnType<typeof mock>).mockResolvedValueOnce({
@@ -2664,7 +2664,7 @@ describe('workflowAbandonCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2713,7 +2713,7 @@ describe('workflowCleanupCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2758,7 +2758,7 @@ describe('workflowRejectCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -2798,7 +2798,7 @@ describe('workflowRejectCommand', () => {
       metadata: { approval: { type: 'approval', nodeId: 'gate', message: 'Approve?' } },
     });
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: vi.fn(() => Promise.resolve()),
     });
 
     await workflowRejectCommand('run-plain', 'not good');
@@ -2921,7 +2921,7 @@ describe('workflowRejectCommand', () => {
       },
     });
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: vi.fn(() => Promise.resolve()),
     });
 
     await workflowRejectCommand('run-max', 'still bad');
@@ -3080,8 +3080,8 @@ describe('workflowRunCommand — progress rendering', () => {
   }
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
-    stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     capturedSubscribeHandler = null;
     mockUnsubscribe.mockClear();
     mockLogger.info.mockClear();
@@ -3393,7 +3393,7 @@ describe('workflowResetSessionsCommand', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     mockDeleteNodeSessions.mockClear();
     mockDeleteNodeSessions.mockResolvedValue({ deleted: 0 });
   });

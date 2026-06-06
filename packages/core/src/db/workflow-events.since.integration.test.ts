@@ -10,9 +10,9 @@
  * Runs in its own `bun test` invocation (see package.json) — it mock.module's
  * ./connection with a real adapter, conflicting with other db tests' fakes.
  */
-import { describe, test, expect, mock } from 'bun:test';
+import { vi, describe, test, expect } from 'vitest';
 
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => ({
     info() {},
     warn() {},
@@ -26,7 +26,7 @@ mock.module('@archon/paths', () => ({
 const { SqliteAdapter, sqliteDialect } = await import('./adapters/sqlite');
 const db = new SqliteAdapter(':memory:');
 
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: db,
   getDialect: () => sqliteDialect,
   getDatabaseType: () => 'sqlite',

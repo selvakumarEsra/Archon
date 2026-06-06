@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { encryptToken, decryptToken, getEncryptionKey } from './token-crypto';
 
 const KEY = Buffer.alloc(32, 7); // deterministic 32-byte key

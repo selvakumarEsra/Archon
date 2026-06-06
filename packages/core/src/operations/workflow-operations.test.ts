@@ -1,43 +1,43 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mock DB modules before importing the module under test
 // ---------------------------------------------------------------------------
 
-const mockGetWorkflowRun = mock(() => Promise.resolve(null));
-const mockListWorkflowRuns = mock(() => Promise.resolve([]));
-const mockUpdateWorkflowRun = mock(() => Promise.resolve());
-const mockCancelWorkflowRun = mock(() => Promise.resolve());
+const mockGetWorkflowRun = vi.fn(() => Promise.resolve(null));
+const mockListWorkflowRuns = vi.fn(() => Promise.resolve([]));
+const mockUpdateWorkflowRun = vi.fn(() => Promise.resolve());
+const mockCancelWorkflowRun = vi.fn(() => Promise.resolve());
 
-mock.module('../db/workflows', () => ({
+vi.mock('../db/workflows', () => ({
   getWorkflowRun: mockGetWorkflowRun,
   listWorkflowRuns: mockListWorkflowRuns,
   updateWorkflowRun: mockUpdateWorkflowRun,
   cancelWorkflowRun: mockCancelWorkflowRun,
 }));
 
-const mockCreateWorkflowEvent = mock(() => Promise.resolve());
+const mockCreateWorkflowEvent = vi.fn(() => Promise.resolve());
 
-mock.module('../db/workflow-events', () => ({
+vi.mock('../db/workflow-events', () => ({
   createWorkflowEvent: mockCreateWorkflowEvent,
 }));
 
-const mockDeleteWorkflowNodeSessions = mock(() => Promise.resolve({ deleted: 0 }));
+const mockDeleteWorkflowNodeSessions = vi.fn(() => Promise.resolve({ deleted: 0 }));
 
-mock.module('../db/workflow-node-sessions', () => ({
+vi.mock('../db/workflow-node-sessions', () => ({
   deleteWorkflowNodeSessions: mockDeleteWorkflowNodeSessions,
 }));
 
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Import AFTER mocks

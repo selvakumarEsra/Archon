@@ -1,10 +1,10 @@
 /**
  * Tests for CLIAdapter
  */
-import { describe, it, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock dependencies BEFORE importing CLIAdapter
-const mockAddMessage = mock(() =>
+const mockAddMessage = vi.fn(() =>
   Promise.resolve({
     id: 'msg-1',
     conversation_id: 'conv-1',
@@ -14,23 +14,23 @@ const mockAddMessage = mock(() =>
     created_at: '',
   })
 );
-mock.module('@archon/core/db/messages', () => ({
+vi.mock('@archon/core/db/messages', () => ({
   addMessage: mockAddMessage,
 }));
 
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 import { CLIAdapter } from './cli-adapter';
@@ -41,7 +41,7 @@ describe('CLIAdapter', () => {
 
   beforeEach(() => {
     adapter = new CLIAdapter();
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     mockAddMessage.mockClear();
     mockLogger.warn.mockClear();
   });

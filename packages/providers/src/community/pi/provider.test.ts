@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { vi, beforeEach, describe, expect, test } from 'vitest';
 import type { AgentSessionEvent } from '@earendil-works/pi-coding-agent';
 
 import { createMockLogger } from '../../test/mocks/logger';
@@ -10,8 +10,8 @@ import { createMockLogger } from '../../test/mocks/logger';
 // ─── Mock @archon/paths logger so provider instantiation is quiet ───────
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // ─── Mock Pi SDK surface ────────────────────────────────────────────────
@@ -30,24 +30,24 @@ type FakeEvent = AgentSessionEvent;
 let capturedListener: ((event: FakeEvent) => void) | undefined;
 
 const scriptedEvents: FakeEvent[] = [];
-const mockPrompt = mock(async () => {
+const mockPrompt = vi.fn(async () => {
   for (const ev of scriptedEvents) capturedListener?.(ev);
 });
-const mockAbort = mock(async () => undefined);
-const mockDispose = mock(() => undefined);
-const mockSubscribe = mock((listener: (event: FakeEvent) => void) => {
+const mockAbort = vi.fn(async () => undefined);
+const mockDispose = vi.fn(() => undefined);
+const mockSubscribe = vi.fn((listener: (event: FakeEvent) => void) => {
   capturedListener = listener;
   return () => {
     capturedListener = undefined;
   };
 });
 
-const mockBindExtensions = mock(async (_bindings: unknown) => undefined);
-const mockSetFlagValue = mock((_name: string, _value: boolean | string) => undefined);
+const mockBindExtensions = vi.fn(async (_bindings: unknown) => undefined);
+const mockSetFlagValue = vi.fn((_name: string, _value: boolean | string) => undefined);
 const mockExtensionRunner = {
   setFlagValue: mockSetFlagValue,
 };
-const mockSetModel = mock(async (_model: unknown) => undefined);
+const mockSetModel = vi.fn(async (_model: unknown) => undefined);
 const mockSession = {
   subscribe: mockSubscribe,
   prompt: mockPrompt,
@@ -60,7 +60,7 @@ const mockSession = {
   sessionId: 'mock-session-uuid',
 };
 
-const mockCreateAgentSession = mock(async () => ({
+const mockCreateAgentSession = vi.fn(async () => ({
   session: mockSession,
   extensionsResult: { extensions: [], errors: [], runtime: {} },
   modelFallbackMessage: undefined,
@@ -72,10 +72,10 @@ const mockCreateAgentSession = mock(async () => ({
 let fileCreds: Record<string, { type: 'api_key' | 'oauth'; key?: string }> = {};
 let runtimeOverrides: Record<string, string> = {};
 
-const mockSetRuntimeApiKey = mock((providerId: string, key: string) => {
+const mockSetRuntimeApiKey = vi.fn((providerId: string, key: string) => {
   runtimeOverrides[providerId] = key;
 });
-const mockGetApiKey = mock(async (providerId: string): Promise<string | undefined> => {
+const mockGetApiKey = vi.fn(async (providerId: string): Promise<string | undefined> => {
   // Mirror Pi's resolution: runtime → file api_key → file oauth → env var
   if (runtimeOverrides[providerId]) return runtimeOverrides[providerId];
   const cred = fileCreds[providerId];
@@ -83,57 +83,57 @@ const mockGetApiKey = mock(async (providerId: string): Promise<string | undefine
   if (cred?.type === 'oauth') return 'oauth-access-token-stub';
   return undefined;
 });
-const mockAuthCreate = mock(() => ({
+const mockAuthCreate = vi.fn(() => ({
   setRuntimeApiKey: mockSetRuntimeApiKey,
   getApiKey: mockGetApiKey,
 }));
 
-const mockModelRegistryFind = mock((provider: string, modelId: string) => {
+const mockModelRegistryFind = vi.fn((provider: string, modelId: string) => {
   if (provider === 'nonexistent') return undefined;
   return { id: modelId, provider, name: `${provider}/${modelId}` };
 });
-const mockModelRegistryCreate = mock(() => ({
+const mockModelRegistryCreate = vi.fn(() => ({
   find: mockModelRegistryFind,
 }));
 
 // SessionManager mocks. Each returns a tagged session-manager stub so tests
 // can assert whether resume resolved to an existing session or fell through
 // to a fresh one.
-const mockSessionCreate = mock((_cwd: string) => ({ __smKind: 'created' }));
-const mockSessionOpen = mock((_path: string) => ({ __smKind: 'opened' }));
-const mockSessionList = mock(
+const mockSessionCreate = vi.fn((_cwd: string) => ({ __smKind: 'created' }));
+const mockSessionOpen = vi.fn((_path: string) => ({ __smKind: 'opened' }));
+const mockSessionList = vi.fn(
   async (_cwd: string) => [] as { id: string; path: string; cwd: string }[]
 );
 
-const mockSettingsManagerDrainErrors = mock(() => []);
-const mockSettingsManagerGetGlobalSettings = mock(() => ({}));
-const mockSettingsManagerGetProjectSettings = mock(() => ({}));
-const mockSettingsManagerCreate = mock(() => ({
+const mockSettingsManagerDrainErrors = vi.fn(() => []);
+const mockSettingsManagerGetGlobalSettings = vi.fn(() => ({}));
+const mockSettingsManagerGetProjectSettings = vi.fn(() => ({}));
+const mockSettingsManagerCreate = vi.fn(() => ({
   drainErrors: mockSettingsManagerDrainErrors,
   getGlobalSettings: mockSettingsManagerGetGlobalSettings,
   getProjectSettings: mockSettingsManagerGetProjectSettings,
 }));
-const mockSettingsManagerInMemory = mock((_settings?: unknown) => ({}));
-const mockResourceLoaderReload = mock(async () => undefined);
-// Return-style constructor: bun's mock() wraps the function such that the
+const mockSettingsManagerInMemory = vi.fn((_settings?: unknown) => ({}));
+const mockResourceLoaderReload = vi.fn(async () => undefined);
+// Return-style constructor: bun's vi.fn() wraps the function such that the
 // `this`-binding doesn't reliably propagate to `new` call sites. Returning a
 // plain object from the constructor sidesteps this — ES semantics use the
 // returned object when a constructor explicitly returns one.
-const MockDefaultResourceLoader = mock((_opts: unknown) => ({
+const MockDefaultResourceLoader = vi.fn((_opts: unknown) => ({
   reload: mockResourceLoaderReload,
 }));
 
 // Tool factory mocks — each returns an opaque object tagged with the tool
 // name so assertions can verify which tools the provider selected.
-const mockCreateReadTool = mock((_cwd: string) => ({ __piTool: 'read' }));
-const mockCreateBashTool = mock((_cwd: string, _options?: unknown) => ({ __piTool: 'bash' }));
-const mockCreateEditTool = mock((_cwd: string) => ({ __piTool: 'edit' }));
-const mockCreateWriteTool = mock((_cwd: string) => ({ __piTool: 'write' }));
-const mockCreateGrepTool = mock((_cwd: string) => ({ __piTool: 'grep' }));
-const mockCreateFindTool = mock((_cwd: string) => ({ __piTool: 'find' }));
-const mockCreateLsTool = mock((_cwd: string) => ({ __piTool: 'ls' }));
+const mockCreateReadTool = vi.fn((_cwd: string) => ({ __piTool: 'read' }));
+const mockCreateBashTool = vi.fn((_cwd: string, _options?: unknown) => ({ __piTool: 'bash' }));
+const mockCreateEditTool = vi.fn((_cwd: string) => ({ __piTool: 'edit' }));
+const mockCreateWriteTool = vi.fn((_cwd: string) => ({ __piTool: 'write' }));
+const mockCreateGrepTool = vi.fn((_cwd: string) => ({ __piTool: 'grep' }));
+const mockCreateFindTool = vi.fn((_cwd: string) => ({ __piTool: 'find' }));
+const mockCreateLsTool = vi.fn((_cwd: string) => ({ __piTool: 'ls' }));
 
-mock.module('@earendil-works/pi-coding-agent', () => ({
+vi.mock('@earendil-works/pi-coding-agent', () => ({
   createAgentSession: mockCreateAgentSession,
   AuthStorage: { create: mockAuthCreate },
   ModelRegistry: { create: mockModelRegistryCreate },
@@ -161,7 +161,7 @@ mock.module('@earendil-works/pi-coding-agent', () => ({
   // Value import required by ./native-tools (added when manage_run native tools
   // were wired into Pi). These tests don't pass nativeTools, so it's never
   // called — but the static `import { defineTool }` needs the binding to exist.
-  defineTool: mock((def: unknown) => def),
+  defineTool: vi.fn((def: unknown) => def),
 }));
 
 // Import AFTER mocks are set — module resolution freezes the mocks.

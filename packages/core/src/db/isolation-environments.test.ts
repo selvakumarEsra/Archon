@@ -1,10 +1,10 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 import type { IsolationEnvironmentRow } from '@archon/isolation';
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
 
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: {
     query: mockQuery,
   },

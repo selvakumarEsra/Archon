@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { loadArchonEnv } from './env-loader';
@@ -42,7 +42,7 @@ beforeEach(() => {
   for (const k of TEST_KEYS) delete process.env[k];
 
   stderrWrites = [];
-  stderrSpy = spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
+  stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
     stderrWrites.push(typeof chunk === 'string' ? chunk : String(chunk));
     return true;
   });
@@ -157,10 +157,10 @@ describe('loadArchonEnv', () => {
     mkdirSync(join(archonHomeDir, '.env'), { recursive: true }); // directory at .env path
 
     const consoleErrorMessages: string[] = [];
-    const consoleErrorSpy = spyOn(console, 'error').mockImplementation((msg: unknown) => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation((msg: unknown) => {
       consoleErrorMessages.push(String(msg));
     });
-    const exitSpy = spyOn(process, 'exit').mockImplementation((() => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
       throw new Error('process.exit called');
     }) as never);
 

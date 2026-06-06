@@ -4,7 +4,7 @@
  * Note: These tests focus on argument parsing logic.
  * Full integration tests would require mocking the database and commands.
  */
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 import { parseArgs } from 'util';
 import * as git from '@archon/git';
 

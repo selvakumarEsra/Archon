@@ -3,37 +3,37 @@
  *
  * Runs in its own test batch to avoid mock.module pollution with other adapters.
  */
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // Mock @archon/paths to suppress noisy logger output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonWorkspacesPath: mock(() => '/tmp/test-workspaces'),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands', '.claude/commands']),
-  getProjectSourcePath: mock(
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonWorkspacesPath: vi.fn(() => '/tmp/test-workspaces'),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands', '.claude/commands']),
+  getProjectSourcePath: vi.fn(
     (owner: string, repo: string) => `/tmp/test-workspaces/${owner}/${repo}/source`
   ),
-  ensureProjectStructure: mock(async () => undefined),
-  logArchonPaths: mock(() => undefined),
-  validateAppDefaultsPaths: mock(async () => undefined),
+  ensureProjectStructure: vi.fn(async () => undefined),
+  logArchonPaths: vi.fn(() => undefined),
+  validateAppDefaultsPaths: vi.fn(async () => undefined),
 }));
 
 // Mock @archon/core/db modules to throw immediately (avoid DB connection hangs in tests)
-const mockFindOrCreateUserByPlatformIdentity = mock(
+const mockFindOrCreateUserByPlatformIdentity = vi.fn(
   async (_platform: string, _platformUserId: string, _displayName?: string) => ({
     id: 'user-test-uuid',
     display_name: 'Test',
@@ -42,30 +42,30 @@ const mockFindOrCreateUserByPlatformIdentity = mock(
     updated_at: new Date(),
   })
 );
-mock.module('@archon/core/db/users', () => ({
+vi.mock('@archon/core/db/users', () => ({
   findOrCreateUserByPlatformIdentity: mockFindOrCreateUserByPlatformIdentity,
 }));
-const mockGetOrCreateConversation = mock(async () => {
+const mockGetOrCreateConversation = vi.fn(async () => {
   throw new Error('DB not mocked in tests');
 });
-const mockUpdateConversation = mock(async () => {
+const mockUpdateConversation = vi.fn(async () => {
   throw new Error('DB not mocked in tests');
 });
-const mockGetConversation = mock(async () => null);
-mock.module('@archon/core/db/conversations', () => ({
+const mockGetConversation = vi.fn(async () => null);
+vi.mock('@archon/core/db/conversations', () => ({
   getOrCreateConversation: mockGetOrCreateConversation,
   updateConversation: mockUpdateConversation,
   getConversation: mockGetConversation,
 }));
 
-const mockFindCodebaseByRepoUrl = mock(async () => null);
-const mockCreateCodebase = mock(async () => {
+const mockFindCodebaseByRepoUrl = vi.fn(async () => null);
+const mockCreateCodebase = vi.fn(async () => {
   throw new Error('DB not mocked in tests');
 });
-const mockGetCodebaseCommands = mock(async () => ({}));
-const mockUpdateCodebaseCommands = mock(async () => undefined);
-const mockUpdateCodebase = mock(async () => undefined);
-mock.module('@archon/core/db/codebases', () => ({
+const mockGetCodebaseCommands = vi.fn(async () => ({}));
+const mockUpdateCodebaseCommands = vi.fn(async () => undefined);
+const mockUpdateCodebase = vi.fn(async () => undefined);
+vi.mock('@archon/core/db/codebases', () => ({
   findCodebaseByRepoUrl: mockFindCodebaseByRepoUrl,
   createCodebase: mockCreateCodebase,
   getCodebaseCommands: mockGetCodebaseCommands,
@@ -74,12 +74,12 @@ mock.module('@archon/core/db/codebases', () => ({
 }));
 
 // Mock @archon/core
-const mockHandleMessage = mock(async () => undefined);
-const mockOnConversationClosed = mock(async () => undefined);
-mock.module('@archon/core', () => ({
+const mockHandleMessage = vi.fn(async () => undefined);
+const mockOnConversationClosed = vi.fn(async () => undefined);
+vi.mock('@archon/core', () => ({
   handleMessage: mockHandleMessage,
-  classifyAndFormatError: mock((err: Error) => err.message),
-  toError: mock((e: unknown) => (e instanceof Error ? e : new Error(String(e)))),
+  classifyAndFormatError: vi.fn((err: Error) => err.message),
+  toError: vi.fn((e: unknown) => (e instanceof Error ? e : new Error(String(e)))),
   onConversationClosed: mockOnConversationClosed,
   ConversationNotFoundError: class extends Error {},
   ConversationLockManager: class {
@@ -90,23 +90,23 @@ mock.module('@archon/core', () => ({
 }));
 
 // Mock @archon/git
-mock.module('@archon/git', () => ({
-  cloneRepository: mock(async () => ({ ok: true })),
-  syncRepository: mock(async () => ({ ok: true })),
-  addSafeDirectory: mock(async () => undefined),
-  toRepoPath: mock((p: string) => p),
-  toBranchName: mock((b: string) => b),
-  isWorktreePath: mock(async () => false),
-  execFileAsync: mock(async () => ({ stdout: '', stderr: '' })),
+vi.mock('@archon/git', () => ({
+  cloneRepository: vi.fn(async () => ({ ok: true })),
+  syncRepository: vi.fn(async () => ({ ok: true })),
+  addSafeDirectory: vi.fn(async () => undefined),
+  toRepoPath: vi.fn((p: string) => p),
+  toBranchName: vi.fn((b: string) => b),
+  isWorktreePath: vi.fn(async () => false),
+  execFileAsync: vi.fn(async () => ({ stdout: '', stderr: '' })),
 }));
 
 // Mock @archon/isolation
-mock.module('@archon/isolation', () => ({
+vi.mock('@archon/isolation', () => ({
   IsolationHints: {},
 }));
 
 // Mock global fetch to prevent real HTTP calls (gitlab.example.com hangs on CI Linux)
-const mockFetch = mock(() => Promise.resolve(new Response(JSON.stringify({}), { status: 200 })));
+const mockFetch = vi.fn(() => Promise.resolve(new Response(JSON.stringify({}), { status: 200 })));
 globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
 // Now import the adapter (after all mocks)
@@ -717,7 +717,7 @@ describe('GitLabAdapter', () => {
     let mockFetch: ReturnType<typeof mock>;
 
     beforeEach(() => {
-      mockFetch = mock(() => Promise.resolve(new Response(JSON.stringify({}), { status: 200 })));
+      mockFetch = vi.fn(() => Promise.resolve(new Response(JSON.stringify({}), { status: 200 })));
       globalThis.fetch = mockFetch as typeof fetch;
     });
 

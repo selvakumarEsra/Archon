@@ -11,16 +11,16 @@
  * Runs in its own bun test invocation — mocks @github/copilot-sdk and
  * @archon/paths process-wide.
  */
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { vi, beforeEach, describe, expect, test } from 'vitest';
 import type { SessionEvent } from '@github/copilot-sdk';
 
 import { createMockLogger } from '../../test/mocks/logger';
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
   BUNDLED_IS_BINARY: false,
-  getArchonHome: mock(() => '/tmp/test-archon-home'),
+  getArchonHome: vi.fn(() => '/tmp/test-archon-home'),
 }));
 
 interface FakeSession {
@@ -93,26 +93,26 @@ let sendAndWaitCallCount = 0;
 let nextCreateSessionResult: FakeSession | Error;
 let stopImpl: () => Promise<Error[]> = async () => [];
 
-const createSessionSpy = mock((_opts: unknown): Promise<FakeSession> => {
+const createSessionSpy = vi.fn((_opts: unknown): Promise<FakeSession> => {
   if (nextCreateSessionResult instanceof Error) {
     return Promise.reject(nextCreateSessionResult);
   }
   return Promise.resolve(nextCreateSessionResult);
 });
-const stopSpy = mock(async (): Promise<Error[]> => stopImpl());
+const stopSpy = vi.fn(async (): Promise<Error[]> => stopImpl());
 
 class FakeCopilotClient {
   createSession = createSessionSpy;
-  resumeSession = mock(async () => {
+  resumeSession = vi.fn(async () => {
     throw new Error('resumeSession not used in hardening tests');
   });
   stop = stopSpy;
   constructor(_opts: Record<string, unknown>) {}
 }
 
-const approveAllStub = mock(() => ({ kind: 'approved' }));
+const approveAllStub = vi.fn(() => ({ kind: 'approved' }));
 
-mock.module('@github/copilot-sdk', () => ({
+vi.mock('@github/copilot-sdk', () => ({
   CopilotClient: FakeCopilotClient,
   approveAll: approveAllStub,
 }));

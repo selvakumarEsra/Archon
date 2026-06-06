@@ -4,10 +4,10 @@
  * Uses spyOn for `@archon/git.execFileAsync` and `globalThis.fetch`.
  * `BUNDLED_IS_BINARY` is a static const re-export and cannot be spied at
  * runtime — `checkClaudeBinary` accepts it as an injectable parameter for
- * testability. Avoids `mock.module()` because it is process-global and
+ * testability. Avoids `vi.mock()` because it is process-global and
  * irreversible in Bun, which would pollute other test files in this package.
  */
-import { describe, it, expect, spyOn, afterEach, beforeEach } from 'bun:test';
+import { vi, describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdirSync, rmSync } from 'fs';
@@ -31,7 +31,7 @@ describe('checkClaudeBinary', () => {
   let execSpy: ReturnType<typeof spyOn<typeof git, 'execFileAsync'>>;
 
   beforeEach(() => {
-    execSpy = spyOn(git, 'execFileAsync');
+    execSpy = vi.spyOn(git, 'execFileAsync');
   });
 
   afterEach(() => {
@@ -73,7 +73,7 @@ describe('checkGhAuth', () => {
   let execSpy: ReturnType<typeof spyOn<typeof git, 'execFileAsync'>>;
 
   beforeEach(() => {
-    execSpy = spyOn(git, 'execFileAsync');
+    execSpy = vi.spyOn(git, 'execFileAsync');
   });
 
   afterEach(() => {
@@ -117,7 +117,7 @@ describe('checkPi', () => {
   let authJsonSpy: ReturnType<typeof spyOn<typeof doctorModule, 'probeAuthJsonExists'>>;
 
   beforeEach(() => {
-    authJsonSpy = spyOn(doctorModule, 'probeAuthJsonExists');
+    authJsonSpy = vi.spyOn(doctorModule, 'probeAuthJsonExists');
   });
 
   afterEach(() => {
@@ -268,7 +268,7 @@ describe('checkSlack', () => {
   let fetchSpy: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
 
   beforeEach(() => {
-    fetchSpy = spyOn(globalThis, 'fetch');
+    fetchSpy = vi.spyOn(globalThis, 'fetch');
   });
 
   afterEach(() => {
@@ -313,7 +313,7 @@ describe('checkTelegram', () => {
   let fetchSpy: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
 
   beforeEach(() => {
-    fetchSpy = spyOn(globalThis, 'fetch');
+    fetchSpy = vi.spyOn(globalThis, 'fetch');
   });
 
   afterEach(() => {
@@ -434,7 +434,7 @@ describe('doctorCommand', () => {
   let logSpy: ReturnType<typeof spyOn<Console, 'log'>>;
 
   beforeEach(() => {
-    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {

@@ -1,10 +1,10 @@
-import { describe, it, expect, mock, beforeEach, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // --- Mock logger (MUST come before imports of modules under test) ---
 // event-emitter.ts uses a lazy-initialized logger via getLog(), so we must
 // mock @archon/paths before any import of event-emitter.
 
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -12,13 +12,13 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  child: vi.fn(() => mockLogger),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // --- Imports (after mocks) ---
@@ -121,7 +121,7 @@ describe('WorkflowEventEmitter', () => {
 
     it('new instance after reset has no prior subscribers', () => {
       const emitter = getWorkflowEventEmitter();
-      const listener = mock((_event: WorkflowEmitterEvent) => {});
+      const listener = vi.fn((_event: WorkflowEmitterEvent) => {});
       emitter.subscribe(listener);
 
       resetWorkflowEventEmitter();
@@ -139,7 +139,7 @@ describe('WorkflowEventEmitter', () => {
   describe('subscribe()', () => {
     it('adds a listener that receives emitted events', () => {
       const emitter = getWorkflowEventEmitter();
-      const listener = mock((_event: WorkflowEmitterEvent) => {});
+      const listener = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       emitter.subscribe(listener);
       emitter.emit(makeWorkflowStartedEvent());
@@ -153,13 +153,13 @@ describe('WorkflowEventEmitter', () => {
 
     it('returns an unsubscribe function', () => {
       const emitter = getWorkflowEventEmitter();
-      const unsubscribe = emitter.subscribe(mock(() => {}));
+      const unsubscribe = emitter.subscribe(vi.fn(() => {}));
       expect(typeof unsubscribe).toBe('function');
     });
 
     it('calling the returned unsubscribe function stops event delivery', () => {
       const emitter = getWorkflowEventEmitter();
-      const listener = mock((_event: WorkflowEmitterEvent) => {});
+      const listener = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       const unsubscribe = emitter.subscribe(listener);
       emitter.emit(makeWorkflowStartedEvent());
@@ -173,8 +173,8 @@ describe('WorkflowEventEmitter', () => {
 
     it('unsubscribing one listener does not affect other listeners', () => {
       const emitter = getWorkflowEventEmitter();
-      const listenerA = mock((_event: WorkflowEmitterEvent) => {});
-      const listenerB = mock((_event: WorkflowEmitterEvent) => {});
+      const listenerA = vi.fn((_event: WorkflowEmitterEvent) => {});
+      const listenerB = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       const unsubscribeA = emitter.subscribe(listenerA);
       emitter.subscribe(listenerB);
@@ -193,7 +193,7 @@ describe('WorkflowEventEmitter', () => {
 
     it('calling unsubscribe multiple times is idempotent', () => {
       const emitter = getWorkflowEventEmitter();
-      const listener = mock((_event: WorkflowEmitterEvent) => {});
+      const listener = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       const unsubscribe = emitter.subscribe(listener);
       unsubscribe();
@@ -212,7 +212,9 @@ describe('WorkflowEventEmitter', () => {
   describe('emit()', () => {
     it('delivers event to all current subscribers', () => {
       const emitter = getWorkflowEventEmitter();
-      const listeners = Array.from({ length: 5 }, () => mock((_event: WorkflowEmitterEvent) => {}));
+      const listeners = Array.from({ length: 5 }, () =>
+        vi.fn((_event: WorkflowEmitterEvent) => {})
+      );
       listeners.forEach(l => emitter.subscribe(l));
 
       const event = makeNodeStartedEvent();
@@ -311,11 +313,11 @@ describe('WorkflowEventEmitter', () => {
   describe('listener error isolation', () => {
     it('a throwing listener does not prevent other listeners from receiving the event', () => {
       const emitter = getWorkflowEventEmitter();
-      const goodListenerBefore = mock((_event: WorkflowEmitterEvent) => {});
-      const throwingListener = mock((_event: WorkflowEmitterEvent) => {
+      const goodListenerBefore = vi.fn((_event: WorkflowEmitterEvent) => {});
+      const throwingListener = vi.fn((_event: WorkflowEmitterEvent) => {
         throw new Error('Listener explosion');
       });
-      const goodListenerAfter = mock((_event: WorkflowEmitterEvent) => {});
+      const goodListenerAfter = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       emitter.subscribe(goodListenerBefore);
       emitter.subscribe(throwingListener);
@@ -345,7 +347,7 @@ describe('WorkflowEventEmitter', () => {
 
     it('multiple throwing listeners each log their own error without affecting neighbours', () => {
       const emitter = getWorkflowEventEmitter();
-      const good = mock((_event: WorkflowEmitterEvent) => {});
+      const good = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       emitter.subscribe(() => {
         throw new Error('first');
@@ -451,8 +453,8 @@ describe('WorkflowEventEmitter', () => {
       emitter.registerRun('run-A', 'conv-A');
       emitter.registerRun('run-B', 'conv-B');
 
-      const listenerA = mock((_event: WorkflowEmitterEvent) => {});
-      const listenerB = mock((_event: WorkflowEmitterEvent) => {});
+      const listenerA = vi.fn((_event: WorkflowEmitterEvent) => {});
+      const listenerB = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       emitter.subscribeForConversation('conv-A', listenerA);
       emitter.subscribeForConversation('conv-B', listenerB);
@@ -472,7 +474,7 @@ describe('WorkflowEventEmitter', () => {
     it('does not deliver events for runs that are not registered to any conversation', () => {
       const emitter = getWorkflowEventEmitter();
       // run-X is not registered
-      const listener = mock((_event: WorkflowEmitterEvent) => {});
+      const listener = vi.fn((_event: WorkflowEmitterEvent) => {});
       emitter.subscribeForConversation('conv-A', listener);
 
       emitter.emit(makeWorkflowStartedEvent('run-X'));
@@ -484,7 +486,7 @@ describe('WorkflowEventEmitter', () => {
       const emitter = getWorkflowEventEmitter();
       emitter.registerRun('run-1', 'conv-1');
 
-      const listener = mock((_event: WorkflowEmitterEvent) => {});
+      const listener = vi.fn((_event: WorkflowEmitterEvent) => {});
       const unsubscribe = emitter.subscribeForConversation('conv-1', listener);
 
       emitter.emit(makeNodeStartedEvent('run-1'));
@@ -500,8 +502,8 @@ describe('WorkflowEventEmitter', () => {
       const emitter = getWorkflowEventEmitter();
       emitter.registerRun('run-1', 'conv-1');
 
-      const globalListener = mock((_event: WorkflowEmitterEvent) => {});
-      const convListener = mock((_event: WorkflowEmitterEvent) => {});
+      const globalListener = vi.fn((_event: WorkflowEmitterEvent) => {});
+      const convListener = vi.fn((_event: WorkflowEmitterEvent) => {});
 
       emitter.subscribe(globalListener);
       emitter.subscribeForConversation('conv-1', convListener);

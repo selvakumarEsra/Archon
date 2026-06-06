@@ -1,4 +1,4 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 import { MockPlatformAdapter } from '../test/mocks/platform';
 import type { Conversation, Codebase } from '../types';
@@ -7,93 +7,93 @@ import type { IsolationEnvironmentRow } from '@archon/isolation';
 // ─── Mock setup (BEFORE importing module under test) ─────────────────────────
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonWorkspacesPath: mock(() => '/home/test/.archon/workspaces'),
-  ensureArchonWorkspacesPath: mock(() => Promise.resolve('/home/test/.archon/workspaces')),
-  getArchonHome: mock(() => '/home/test/.archon'),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonWorkspacesPath: vi.fn(() => '/home/test/.archon/workspaces'),
+  ensureArchonWorkspacesPath: vi.fn(() => Promise.resolve('/home/test/.archon/workspaces')),
+  getArchonHome: vi.fn(() => '/home/test/.archon'),
 }));
 
 // DB mocks
-const mockUpdateConversation = mock(() => Promise.resolve());
-mock.module('../db/conversations', () => ({
-  getOrCreateConversation: mock(() => Promise.resolve(null)),
-  getConversationByPlatformId: mock(() => Promise.resolve(null)),
+const mockUpdateConversation = vi.fn(() => Promise.resolve());
+vi.mock('../db/conversations', () => ({
+  getOrCreateConversation: vi.fn(() => Promise.resolve(null)),
+  getConversationByPlatformId: vi.fn(() => Promise.resolve(null)),
   updateConversation: mockUpdateConversation,
-  touchConversation: mock(() => Promise.resolve()),
+  touchConversation: vi.fn(() => Promise.resolve()),
 }));
 
-mock.module('../db/codebases', () => ({
-  getCodebase: mock(() => Promise.resolve(null)),
-  listCodebases: mock(() => Promise.resolve([])),
-  createCodebase: mock(() => Promise.resolve({ id: 'new-codebase-id' })),
+vi.mock('../db/codebases', () => ({
+  getCodebase: vi.fn(() => Promise.resolve(null)),
+  listCodebases: vi.fn(() => Promise.resolve([])),
+  createCodebase: vi.fn(() => Promise.resolve({ id: 'new-codebase-id' })),
 }));
 
-mock.module('../db/isolation-environments', () => ({
-  createIsolationStore: mock(() => ({
-    updateStatus: mock(() => Promise.resolve()),
+vi.mock('../db/isolation-environments', () => ({
+  createIsolationStore: vi.fn(() => ({
+    updateStatus: vi.fn(() => Promise.resolve()),
   })),
 }));
 
 // orchestrator.ts resolves the per-user no-reply email for worktree git identity;
 // mock it (like the other db deps) so the real db/connection + adapters aren't
 // dragged into this test's light module graph.
-mock.module('../db/user-github-token-store', () => ({
-  getUserGithubNoreplyEmail: mock(() => Promise.resolve(null)),
+vi.mock('../db/user-github-token-store', () => ({
+  getUserGithubNoreplyEmail: vi.fn(() => Promise.resolve(null)),
 }));
 
-mock.module('../db/sessions', () => ({
-  getActiveSession: mock(() => Promise.resolve(null)),
-  createSession: mock(() => Promise.resolve(null)),
-  updateSession: mock(() => Promise.resolve()),
-  deactivateSession: mock(() => Promise.resolve()),
-  transitionSession: mock(() => Promise.resolve(null)),
+vi.mock('../db/sessions', () => ({
+  getActiveSession: vi.fn(() => Promise.resolve(null)),
+  createSession: vi.fn(() => Promise.resolve(null)),
+  updateSession: vi.fn(() => Promise.resolve()),
+  deactivateSession: vi.fn(() => Promise.resolve()),
+  transitionSession: vi.fn(() => Promise.resolve(null)),
 }));
 
-mock.module('../handlers/command-handler', () => ({
-  handleCommand: mock(() => Promise.resolve({ message: '', modified: false, success: true })),
-  parseCommand: mock((msg: string) => ({
+vi.mock('../handlers/command-handler', () => ({
+  handleCommand: vi.fn(() => Promise.resolve({ message: '', modified: false, success: true })),
+  parseCommand: vi.fn((msg: string) => ({
     command: msg.split(/\s+/)[0].substring(1),
     args: msg.split(/\s+/).slice(1),
   })),
 }));
 
-mock.module('@archon/providers', () => ({
-  getAgentProvider: mock(() => null),
+vi.mock('@archon/providers', () => ({
+  getAgentProvider: vi.fn(() => null),
 }));
 
-mock.module('../workflows/store-adapter', () => ({
-  createWorkflowDeps: mock(() => ({
+vi.mock('../workflows/store-adapter', () => ({
+  createWorkflowDeps: vi.fn(() => ({
     store: {},
     getAgentProvider: () => ({}),
     loadConfig: async () => ({}),
   })),
 }));
 
-mock.module('../config/config-loader', () => ({
-  loadConfig: mock(() => Promise.resolve({})),
-  loadRepoConfig: mock(() => Promise.resolve(null)),
+vi.mock('../config/config-loader', () => ({
+  loadConfig: vi.fn(() => Promise.resolve({})),
+  loadRepoConfig: vi.fn(() => Promise.resolve(null)),
 }));
 
-mock.module('../utils/worktree-sync', () => ({
-  syncArchonToWorktree: mock(() => Promise.resolve(false)),
+vi.mock('../utils/worktree-sync', () => ({
+  syncArchonToWorktree: vi.fn(() => Promise.resolve(false)),
 }));
 
-mock.module('../services/cleanup-service', () => ({
-  cleanupToMakeRoom: mock(() => Promise.resolve({ removed: [] })),
-  getWorktreeStatusBreakdown: mock(() => Promise.resolve({ active: 0, stale: 0, merged: 0 })),
+vi.mock('../services/cleanup-service', () => ({
+  cleanupToMakeRoom: vi.fn(() => Promise.resolve({ removed: [] })),
+  getWorktreeStatusBreakdown: vi.fn(() => Promise.resolve({ active: 0, stale: 0, merged: 0 })),
   STALE_THRESHOLD_DAYS: 7,
 }));
 
 // Mock @archon/isolation — shared resolve mock so tests can control return values
-const mockResolve = mock(() => Promise.resolve({ status: 'none' as const, cwd: '/workspace' }));
+const mockResolve = vi.fn(() => Promise.resolve({ status: 'none' as const, cwd: '/workspace' }));
 
 class MockIsolationResolver {
   resolve = mockResolve;
   constructor(_deps: unknown) {}
 }
 
-mock.module('@archon/isolation', () => ({
+vi.mock('@archon/isolation', () => ({
   IsolationResolver: MockIsolationResolver,
   IsolationBlockedError: class IsolationBlockedError extends Error {
     constructor(
@@ -104,38 +104,38 @@ mock.module('@archon/isolation', () => ({
       this.name = 'IsolationBlockedError';
     }
   },
-  configureIsolation: mock(() => undefined),
-  getIsolationProvider: mock(() => ({})),
+  configureIsolation: vi.fn(() => undefined),
+  getIsolationProvider: vi.fn(() => ({})),
 }));
 
-mock.module('./prompt-builder', () => ({
-  buildOrchestratorPrompt: mock(() => 'prompt'),
-  buildProjectScopedPrompt: mock(() => 'prompt'),
+vi.mock('./prompt-builder', () => ({
+  buildOrchestratorPrompt: vi.fn(() => 'prompt'),
+  buildProjectScopedPrompt: vi.fn(() => 'prompt'),
 }));
 
-mock.module('../utils/error-formatter', () => ({
-  classifyAndFormatError: mock((err: Error) => `⚠️ Error: ${err.message}`),
+vi.mock('../utils/error-formatter', () => ({
+  classifyAndFormatError: vi.fn((err: Error) => `⚠️ Error: ${err.message}`),
 }));
 
-mock.module('@archon/workflows/workflow-discovery', () => ({
-  discoverWorkflowsWithConfig: mock(() => Promise.resolve({ workflows: [], errors: [] })),
+vi.mock('@archon/workflows/workflow-discovery', () => ({
+  discoverWorkflowsWithConfig: vi.fn(() => Promise.resolve({ workflows: [], errors: [] })),
 }));
-mock.module('@archon/workflows/executor', () => ({
-  executeWorkflow: mock(() => Promise.resolve()),
+vi.mock('@archon/workflows/executor', () => ({
+  executeWorkflow: vi.fn(() => Promise.resolve()),
 }));
-mock.module('@archon/workflows/router', () => ({
-  findWorkflow: mock(() => undefined),
+vi.mock('@archon/workflows/router', () => ({
+  findWorkflow: vi.fn(() => undefined),
 }));
-mock.module('@archon/workflows/utils/tool-formatter', () => ({
-  formatToolCall: mock(() => ''),
-}));
-
-mock.module('fs', () => ({
-  existsSync: mock(() => true),
+vi.mock('@archon/workflows/utils/tool-formatter', () => ({
+  formatToolCall: vi.fn(() => ''),
 }));
 
-mock.module('../services/title-generator', () => ({
-  generateAndSetTitle: mock(() => Promise.resolve()),
+vi.mock('fs', () => ({
+  existsSync: vi.fn(() => true),
+}));
+
+vi.mock('../services/title-generator', () => ({
+  generateAndSetTitle: vi.fn(() => Promise.resolve()),
 }));
 
 // ─── Import module under test AFTER all mocks ────────────────────────────────

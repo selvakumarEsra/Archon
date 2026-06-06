@@ -1,31 +1,31 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // Mock logger before importing transport
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 import { SSETransport, type SSEWriter } from './transport';
 
 function createMockStream(overrides?: Partial<SSEWriter>): SSEWriter {
   return {
-    writeSSE: mock(() => Promise.resolve()),
-    close: mock(() => Promise.resolve()),
+    writeSSE: vi.fn(() => Promise.resolve()),
+    close: vi.fn(() => Promise.resolve()),
     closed: false,
     ...overrides,
   };
@@ -72,7 +72,7 @@ describe('SSETransport', () => {
     });
 
     test('cancels pending cleanup timer on reconnection', () => {
-      const cleanup = mock((_id: string) => undefined);
+      const cleanup = vi.fn((_id: string) => undefined);
       const transport = new SSETransport(cleanup, 1);
       const stream1 = createMockStream();
       const stream2 = createMockStream();
@@ -129,7 +129,7 @@ describe('SSETransport', () => {
     });
 
     test('calls onCleanup after grace period if stream not re-registered', () => {
-      const cleanup = mock((_id: string) => undefined);
+      const cleanup = vi.fn((_id: string) => undefined);
       const transport = new SSETransport(cleanup, 1);
       const stream = createMockStream();
 
@@ -176,7 +176,7 @@ describe('SSETransport', () => {
     test('removes stream on write failure', async () => {
       const transport = new SSETransport();
       const stream = createMockStream({
-        writeSSE: mock(() => Promise.reject(new Error('write failed'))),
+        writeSSE: vi.fn(() => Promise.reject(new Error('write failed'))),
       });
 
       transport.registerStream('conv-1', stream);
@@ -275,7 +275,7 @@ describe('SSETransport', () => {
     });
 
     test('stop cancels cleanup timers', () => {
-      const cleanup = mock((_id: string) => undefined);
+      const cleanup = vi.fn((_id: string) => undefined);
       const transport = new SSETransport(cleanup, 1);
       const stream = createMockStream();
 

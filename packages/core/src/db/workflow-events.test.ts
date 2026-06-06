@@ -1,24 +1,24 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 import type { WorkflowEventRow } from './workflow-events';
 
 // Mock logger to suppress noisy output during tests
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonHome: mock(() => '/home/test/.archon'),
-  getArchonConfigPath: mock(() => '/home/test/.archon/config.yaml'),
-  getArchonWorkspacesPath: mock(() => '/home/test/.archon/workspaces'),
-  getArchonWorktreesPath: mock(() => '/home/test/.archon/worktrees'),
-  getDefaultCommandsPath: mock(() => '/app/.archon/commands/defaults'),
-  getDefaultWorkflowsPath: mock(() => '/app/.archon/workflows/defaults'),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonHome: vi.fn(() => '/home/test/.archon'),
+  getArchonConfigPath: vi.fn(() => '/home/test/.archon/config.yaml'),
+  getArchonWorkspacesPath: vi.fn(() => '/home/test/.archon/workspaces'),
+  getArchonWorktreesPath: vi.fn(() => '/home/test/.archon/worktrees'),
+  getDefaultCommandsPath: vi.fn(() => '/app/.archon/commands/defaults'),
+  getDefaultWorkflowsPath: vi.fn(() => '/app/.archon/workflows/defaults'),
 }));
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
 
 // Mock the connection module before importing the module under test
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: {
     query: mockQuery,
   },

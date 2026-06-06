@@ -1,4 +1,4 @@
-import { describe, test, expect, mock } from 'bun:test';
+import { vi, describe, test, expect } from 'vitest';
 import type { DbNotificationListener } from '@archon/core/db/adapters/types';
 import { PgNotifyListener } from './pg-notify-listener';
 import type { DashboardEventPoller } from './dashboard-event-poller';
@@ -6,14 +6,14 @@ import type { DashboardEventPoller } from './dashboard-event-poller';
 describe('PgNotifyListener', () => {
   test('subscribes to the dashboard channel and a notification wakes the poller', async () => {
     let onNotify: ((p: string) => void) | undefined;
-    const unsub = mock(() => undefined);
+    const unsub = vi.fn(() => undefined);
     const notifier: DbNotificationListener = {
-      listen: mock((_channel, n: (p: string) => void) => {
+      listen: vi.fn((_channel, n: (p: string) => void) => {
         onNotify = n;
         return Promise.resolve(unsub);
       }),
     };
-    const drainNow = mock(() => Promise.resolve());
+    const drainNow = vi.fn(() => Promise.resolve());
     const poller = { drainNow } as unknown as DashboardEventPoller;
 
     const listener = new PgNotifyListener(notifier, poller);
@@ -32,12 +32,12 @@ describe('PgNotifyListener', () => {
   });
 
   test('stop is idempotent and unsubscribes exactly once', async () => {
-    const unsub = mock(() => undefined);
+    const unsub = vi.fn(() => undefined);
     const notifier: DbNotificationListener = {
-      listen: mock(() => Promise.resolve(unsub)),
+      listen: vi.fn(() => Promise.resolve(unsub)),
     };
     const listener = new PgNotifyListener(notifier, {
-      drainNow: mock(() => Promise.resolve()),
+      drainNow: vi.fn(() => Promise.resolve()),
     } as unknown as DashboardEventPoller);
 
     await listener.start();
@@ -50,9 +50,9 @@ describe('PgNotifyListener', () => {
   test('reconnects (with backoff) after the LISTEN connection drops', async () => {
     let calls = 0;
     let onError: ((e: Error) => void) | undefined;
-    const unsub = mock(() => undefined);
+    const unsub = vi.fn(() => undefined);
     const notifier: DbNotificationListener = {
-      listen: mock((_channel, _onNotify: (p: string) => void, oe: (e: Error) => void) => {
+      listen: vi.fn((_channel, _onNotify: (p: string) => void, oe: (e: Error) => void) => {
         calls += 1;
         onError = oe;
         return Promise.resolve(unsub);
@@ -60,7 +60,7 @@ describe('PgNotifyListener', () => {
     };
     const listener = new PgNotifyListener(
       notifier,
-      { drainNow: mock(() => Promise.resolve()) } as unknown as DashboardEventPoller,
+      { drainNow: vi.fn(() => Promise.resolve()) } as unknown as DashboardEventPoller,
       5 // tiny backoff so the test doesn't wait a second
     );
 

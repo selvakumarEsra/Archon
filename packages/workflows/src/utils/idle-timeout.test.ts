@@ -1,4 +1,4 @@
-import { describe, test, expect, mock } from 'bun:test';
+import { vi, describe, test, expect } from 'vitest';
 import { withIdleTimeout, STEP_IDLE_TIMEOUT_MS } from './idle-timeout';
 
 /** Helper: create an async generator from an array of values with optional delays */
@@ -47,7 +47,7 @@ describe('withIdleTimeout', () => {
   });
 
   test('fires onTimeout and exits when generator hangs', async () => {
-    const onTimeout = mock(() => {});
+    const onTimeout = vi.fn(() => {});
     const result: string[] = [];
 
     // Use a very short timeout (50ms) for testing
@@ -73,7 +73,7 @@ describe('withIdleTimeout', () => {
   });
 
   test('does not fire onTimeout for a slow but completing generator', async () => {
-    const onTimeout = mock(() => {});
+    const onTimeout = vi.fn(() => {});
     const result: number[] = [];
 
     // Each value takes 20ms, timeout is 200ms — should never fire
@@ -86,7 +86,7 @@ describe('withIdleTimeout', () => {
   });
 
   test('resets timeout between values', async () => {
-    const onTimeout = mock(() => {});
+    const onTimeout = vi.fn(() => {});
 
     // Create a generator where each value takes 30ms but timeout is 50ms
     // Without resetting, the 3rd value would trigger timeout at 90ms > 50ms
@@ -132,7 +132,7 @@ describe('withIdleTimeout', () => {
   // dag-executor omits it (all messages reset the timer by default).
   test('shouldResetTimer predicate: does not reset timer on filtered events', async () => {
     type Msg = { type: string };
-    const onTimeout = mock(() => {});
+    const onTimeout = vi.fn(() => {});
     const result: Msg[] = [];
 
     // Generator yields an assistant event, then a tool event, then hangs
@@ -162,7 +162,7 @@ describe('withIdleTimeout', () => {
 
   test('shouldResetTimer predicate: resets timer on non-filtered events', async () => {
     type Msg = { type: string };
-    const onTimeout = mock(() => {});
+    const onTimeout = vi.fn(() => {});
     const result: Msg[] = [];
 
     // Generator: assistant (resets timer), tool (no reset), assistant (resets timer),
@@ -192,7 +192,7 @@ describe('withIdleTimeout', () => {
 
   test('without shouldResetTimer, tool events reset timer (original behavior)', async () => {
     type Msg = { type: string };
-    const onTimeout = mock(() => {});
+    const onTimeout = vi.fn(() => {});
     const result: Msg[] = [];
 
     // Without shouldResetTimer, tool events reset the timer — hang after tool

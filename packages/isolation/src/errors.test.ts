@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { classifyIsolationError, isKnownIsolationError, IsolationBlockedError } from './errors';
 
 describe('classifyIsolationError', () => {

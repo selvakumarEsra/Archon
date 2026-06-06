@@ -5,31 +5,31 @@
  * synthetic events through the bridge and assert the resulting Slack API
  * calls (chat.postMessage / chat.update / reactions.add).
  *
- * NOTE: this file uses mock.module() which is process-global and irreversible
+ * NOTE: this file uses vi.mock() which is process-global and irreversible
  * in Bun. Adapter package.json keeps this test in its own `bun test`
  * invocation so it doesn't pollute other suites.
  */
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { vi, afterEach, beforeEach, describe, expect, test } from 'vitest';
 import type { WorkflowEmitterEvent } from '@archon/workflows/event-emitter';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────
 
 const mockGetConversationId = mock<(runId: string) => string | undefined>(() => undefined);
 let capturedListener: ((event: WorkflowEmitterEvent) => void) | undefined;
-const mockSubscribe = mock((listener: (event: WorkflowEmitterEvent) => void) => {
+const mockSubscribe = vi.fn((listener: (event: WorkflowEmitterEvent) => void) => {
   capturedListener = listener;
   return () => {
     capturedListener = undefined;
   };
 });
 
-mock.module('@archon/workflows/event-emitter', () => ({
+vi.mock('@archon/workflows/event-emitter', () => ({
   getWorkflowEventEmitter: () => ({
     subscribe: mockSubscribe,
     getConversationId: mockGetConversationId,
-    registerRun: mock(() => {}),
-    unregisterRun: mock(() => {}),
-    emit: mock(() => {}),
+    registerRun: vi.fn(() => {}),
+    unregisterRun: vi.fn(() => {}),
+    emit: vi.fn(() => {}),
   }),
 }));
 
@@ -44,7 +44,7 @@ const mockGetWorkflowRun = mock<
   (runId: string) => Promise<{ metadata: Record<string, unknown> } | null>
 >(async () => ({ metadata: { total_cost_usd: 0.0234 } }));
 
-mock.module('@archon/core', () => ({
+vi.mock('@archon/core', () => ({
   workflowOperations: {
     approveWorkflow: mockApproveWorkflow,
     rejectWorkflow: mockRejectWorkflow,
@@ -97,27 +97,27 @@ function makeFakeAdapter(allowedUserIds: string[] = []) {
   const fakeApp = {
     client: {
       chat: {
-        postMessage: mock(async (args: PostedMessage) => {
+        postMessage: vi.fn(async (args: PostedMessage) => {
           posted.push(args);
           return { ts: `${nextTs++}.000` };
         }),
-        update: mock(async (args: UpdatedMessage) => {
+        update: vi.fn(async (args: UpdatedMessage) => {
           updated.push(args);
           return { ok: true };
         }),
       },
       reactions: {
-        add: mock(async (args: ReactionCall) => {
+        add: vi.fn(async (args: ReactionCall) => {
           reactionsAdded.push(args);
           return { ok: true };
         }),
-        remove: mock(async (args: ReactionCall) => {
+        remove: vi.fn(async (args: ReactionCall) => {
           reactionsRemoved.push(args);
           return { ok: true };
         }),
       },
     },
-    action: mock((pattern: RegExp, handler: (args: unknown) => Promise<void>) => {
+    action: vi.fn((pattern: RegExp, handler: (args: unknown) => Promise<void>) => {
       registeredActions.push({ pattern, handler });
     }),
   };

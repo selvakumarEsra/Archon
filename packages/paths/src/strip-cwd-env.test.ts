@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { stripCwdEnv } from './strip-cwd-env';
@@ -92,7 +92,7 @@ describe('stripCwdEnv — operator logging (#1302)', () => {
   beforeEach(() => {
     mkdirSync(tmpDir, { recursive: true });
     stderrWrites = [];
-    stderrSpy = spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
+    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
       stderrWrites.push(typeof chunk === 'string' ? chunk : String(chunk));
       return true;
     });

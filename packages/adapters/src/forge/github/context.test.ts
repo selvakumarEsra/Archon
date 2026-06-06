@@ -7,44 +7,44 @@
  * Separated from adapter.test.ts because these require heavy module mocking
  * of @archon/core and database modules to test the full handleWebhook flow.
  */
-import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createHmac } from 'crypto';
 
 // --- Module mocks (must be before imports that use them) ---
 
 // Mock logger to suppress noisy output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
-const mockHandleMessage = mock(async () => {});
+const mockHandleMessage = vi.fn(async () => {});
 
-const mockGetOrCreateConversation = mock(async () => ({
+const mockGetOrCreateConversation = vi.fn(async () => ({
   id: 'conv-1',
   codebase_id: null,
   cwd: null,
   isolation_env_id: null,
 }));
 
-const mockUpdateConversation = mock(async () => {});
+const mockUpdateConversation = vi.fn(async () => {});
 
-const mockFindCodebaseByRepoUrl = mock(async () => null);
+const mockFindCodebaseByRepoUrl = vi.fn(async () => null);
 
-const mockCreateCodebase = mock(async () => ({
+const mockCreateCodebase = vi.fn(async () => ({
   id: 'codebase-1',
   name: 'testrepo',
   repo_url: 'https://github.com/testuser/testrepo',
@@ -52,15 +52,15 @@ const mockCreateCodebase = mock(async () => ({
   commands: {},
 }));
 
-const mockGetLinkedIssueNumbers = mock(async () => []);
+const mockGetLinkedIssueNumbers = vi.fn(async () => []);
 
-mock.module('@archon/core', () => ({
+vi.mock('@archon/core', () => ({
   handleMessage: mockHandleMessage,
   classifyAndFormatError: () => 'Error occurred',
   ConversationNotFoundError: class extends Error {},
   toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
   getLinkedIssueNumbers: mockGetLinkedIssueNumbers,
-  onConversationClosed: mock(async () => {}),
+  onConversationClosed: vi.fn(async () => {}),
   getArchonWorkspacesPath: () => '/workspace',
   getCommandFolderSearchPaths: () => [],
   ConversationLockManager: class {
@@ -79,28 +79,28 @@ mock.module('@archon/core', () => ({
   },
 }));
 
-mock.module('@archon/git', () => ({
-  isWorktreePath: mock(async () => false),
-  cloneRepository: mock(async () => ({ ok: true, value: undefined })),
-  syncRepository: mock(async () => ({ ok: true, value: undefined })),
-  addSafeDirectory: mock(async () => undefined),
+vi.mock('@archon/git', () => ({
+  isWorktreePath: vi.fn(async () => false),
+  cloneRepository: vi.fn(async () => ({ ok: true, value: undefined })),
+  syncRepository: vi.fn(async () => ({ ok: true, value: undefined })),
+  addSafeDirectory: vi.fn(async () => undefined),
   toRepoPath: (p: string) => p,
   toBranchName: (n: string) => n,
 }));
 
-mock.module('@archon/core/db/conversations', () => ({
+vi.mock('@archon/core/db/conversations', () => ({
   getOrCreateConversation: mockGetOrCreateConversation,
   updateConversation: mockUpdateConversation,
 }));
 
-mock.module('@archon/core/db/codebases', () => ({
+vi.mock('@archon/core/db/codebases', () => ({
   findCodebaseByRepoUrl: mockFindCodebaseByRepoUrl,
   createCodebase: mockCreateCodebase,
-  updateCodebase: mock(async () => {}),
+  updateCodebase: vi.fn(async () => {}),
 }));
 
-mock.module('child_process', () => ({
-  execFile: mock(
+vi.mock('child_process', () => ({
+  execFile: vi.fn(
     (
       _cmd: string,
       _args: string[],
@@ -110,7 +110,7 @@ mock.module('child_process', () => ({
       callback(null, { stdout: '', stderr: '' });
     }
   ),
-  exec: mock(
+  exec: vi.fn(
     (
       _cmd: string,
       _opts: unknown,
@@ -123,7 +123,7 @@ mock.module('child_process', () => ({
 
 // Note: fs/promises is NOT mocked here. The adapter methods that use readdir/access
 // (ensureRepoReady, autoDetectAndLoadCommands) are mocked at the adapter level in
-// createTestAdapter(). Using mock.module('fs/promises') would leak globally and break
+// createTestAdapter(). Using vi.mock('fs/promises') would leak globally and break
 // other tests (e.g., version.test.ts) since Bun's mock.module persists across files.
 
 // --- Imports (after mocks) ---
@@ -192,7 +192,7 @@ function createIssueCommentPayload(
  */
 function createTestAdapter(): GitHubAdapter {
   const adapter = new GitHubAdapter({ kind: 'pat', token: 'fake-token' }, WEBHOOK_SECRET, {
-    acquireLock: mock(async (_id: string, handler: () => Promise<void>) => {
+    acquireLock: vi.fn(async (_id: string, handler: () => Promise<void>) => {
       await handler();
     }),
     getStats: () => ({
@@ -205,24 +205,24 @@ function createTestAdapter(): GitHubAdapter {
   } as unknown as InstanceType<typeof import('@archon/core').ConversationLockManager>);
 
   // @ts-expect-error - mock private method for testing
-  adapter.verifySignature = mock(() => true);
+  adapter.verifySignature = vi.fn(() => true);
 
   // @ts-expect-error - mock private Octokit for API calls during webhook flow
   adapter.octokit = {
     rest: {
       repos: {
-        get: mock(() =>
+        get: vi.fn(() =>
           Promise.resolve({
             data: { default_branch: 'main' },
           })
         ),
       },
       issues: {
-        createComment: mock(() => Promise.resolve({ data: {} })),
-        listComments: mock(() => Promise.resolve({ data: [] })),
+        createComment: vi.fn(() => Promise.resolve({ data: {} })),
+        listComments: vi.fn(() => Promise.resolve({ data: [] })),
       },
       pulls: {
-        get: mock(() =>
+        get: vi.fn(() =>
           Promise.resolve({
             data: {
               head: {
@@ -241,10 +241,10 @@ function createTestAdapter(): GitHubAdapter {
   };
 
   // @ts-expect-error - mock private method to skip filesystem operations
-  adapter.ensureRepoReady = mock(async () => {});
+  adapter.ensureRepoReady = vi.fn(async () => {});
 
   // @ts-expect-error - mock private method to skip command loading
-  adapter.autoDetectAndLoadCommands = mock(async () => {});
+  adapter.autoDetectAndLoadCommands = vi.fn(async () => {});
 
   return adapter;
 }

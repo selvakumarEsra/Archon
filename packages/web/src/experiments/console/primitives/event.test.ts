@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { toRunEvent, countTerminalNodes } from './event';
 
 type Raw = Parameters<typeof toRunEvent>[0];

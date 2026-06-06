@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { symlink as fsSymlink } from 'fs/promises';
 import { tmpdir } from 'os';
@@ -9,7 +9,7 @@ import * as realPaths from '@archon/paths';
 // exports (findMarkdownFilesRecursive, getHomeCommandsPath, etc.) use real
 // implementations — loadCommandPrompt exercises them against a tmp dir set
 // via ARCHON_HOME below.
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -17,14 +17,14 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  child: vi.fn(() => mockLogger),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   ...realPaths,
-  createLogger: mock(() => mockLogger),
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 import { loadCommandPrompt } from './executor-shared';

@@ -1,35 +1,35 @@
 /**
  * Tests for the CLI chat command
  */
-import { describe, test, expect, mock, beforeEach, spyOn } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // Mock logger before any imports
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(() => mockLogger),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(() => mockLogger),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Mock @archon/core/db/messages (used by CLIAdapter for persistence)
-mock.module('@archon/core/db/messages', () => ({
-  addMessage: mock(() => Promise.resolve()),
+vi.mock('@archon/core/db/messages', () => ({
+  addMessage: vi.fn(() => Promise.resolve()),
 }));
 
 // Mock handleMessage from @archon/core
-const mockHandleMessage = mock(() => Promise.resolve());
+const mockHandleMessage = vi.fn(() => Promise.resolve());
 
-mock.module('@archon/core', () => ({
+vi.mock('@archon/core', () => ({
   handleMessage: mockHandleMessage,
 }));
 
@@ -103,7 +103,7 @@ describe('chatCommand', () => {
   });
 
   test('should not log to console for empty string message', async () => {
-    const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
       await chatCommand('');
       expect(mockHandleMessage).toHaveBeenCalledTimes(1);

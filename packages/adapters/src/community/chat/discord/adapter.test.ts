@@ -1,40 +1,40 @@
 /**
  * Unit tests for Discord adapter
  */
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
-import type { Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 
 // Mock logger to suppress noisy output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Create mock functions before mocking the module
-const mockChannelSend = mock(() => Promise.resolve(undefined));
-const mockChannelsFetch = mock(() =>
+const mockChannelSend = vi.fn(() => Promise.resolve(undefined));
+const mockChannelsFetch = vi.fn(() =>
   Promise.resolve({
     isSendable: () => true,
     send: mockChannelSend,
   })
 );
-const mockClientOn = mock(() => {});
-const mockClientOnce = mock(() => {});
-const mockClientLogin = mock(() => Promise.resolve('token'));
-const mockClientDestroy = mock(() => {});
+const mockClientOn = vi.fn(() => {});
+const mockClientOnce = vi.fn(() => {});
+const mockClientLogin = vi.fn(() => Promise.resolve('token'));
+const mockClientDestroy = vi.fn(() => {});
 
 const mockClient = {
   channels: {
@@ -47,10 +47,10 @@ const mockClient = {
   user: { id: '123456789' },
 };
 
-const MockClient = mock(() => mockClient);
+const MockClient = vi.fn(() => mockClient);
 
 // Mock discord.js
-mock.module('discord.js', () => ({
+vi.mock('discord.js', () => ({
   Client: MockClient,
   GatewayIntentBits: {
     Guilds: 1,
@@ -191,7 +191,7 @@ describe('DiscordAdapter', () => {
   describe('message handler registration', () => {
     test('should allow registering a message handler', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockHandler = mock(() => Promise.resolve(undefined));
+      const mockHandler = vi.fn(() => Promise.resolve(undefined));
 
       adapter.onMessage(mockHandler);
       await adapter.start();
@@ -211,7 +211,7 @@ describe('DiscordAdapter', () => {
 
     test('passes platformUserId and displayName from message.author', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockHandler = mock(async (_ctx: DiscordMessageContext) => undefined);
+      const mockHandler = vi.fn(async (_ctx: DiscordMessageContext) => undefined);
       adapter.onMessage(mockHandler);
       await adapter.start();
 
@@ -238,7 +238,7 @@ describe('DiscordAdapter', () => {
 
     test('handles message with missing author gracefully', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockHandler = mock(async (_ctx: DiscordMessageContext) => undefined);
+      const mockHandler = vi.fn(async (_ctx: DiscordMessageContext) => undefined);
       adapter.onMessage(mockHandler);
       await adapter.start();
 
@@ -264,7 +264,7 @@ describe('DiscordAdapter', () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
       const mockMessage = {
         mentions: {
-          has: mock(() => true),
+          has: vi.fn(() => true),
         },
       } as unknown as import('discord.js').Message;
 
@@ -275,7 +275,7 @@ describe('DiscordAdapter', () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
       const mockMessage = {
         mentions: {
-          has: mock(() => false),
+          has: vi.fn(() => false),
         },
       } as unknown as import('discord.js').Message;
 
@@ -385,7 +385,7 @@ describe('DiscordAdapter', () => {
         ['id1', msg1], // oldest - last in Collection
       ]);
 
-      const mockMessagesFetch = mock(() => Promise.resolve(mockMessagesMap));
+      const mockMessagesFetch = vi.fn(() => Promise.resolve(mockMessagesMap));
       const mockMessage = {
         channel: {
           isThread: () => true,
@@ -411,7 +411,7 @@ describe('DiscordAdapter', () => {
         content: 'No display name here',
       };
       const mockMessagesMap = new Map([['id1', msg]]);
-      const mockMessagesFetch = mock(() => Promise.resolve(mockMessagesMap));
+      const mockMessagesFetch = vi.fn(() => Promise.resolve(mockMessagesMap));
       const mockMessage = {
         channel: {
           isThread: () => true,
@@ -426,7 +426,7 @@ describe('DiscordAdapter', () => {
 
     test('should fetch with limit 100', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockMessagesFetch = mock(() => Promise.resolve(new Map()));
+      const mockMessagesFetch = vi.fn(() => Promise.resolve(new Map()));
       const mockMessage = {
         channel: {
           isThread: () => true,
@@ -442,7 +442,7 @@ describe('DiscordAdapter', () => {
 
     test('should return empty array and log error when fetch throws', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockMessagesFetch = mock(() => Promise.reject(new Error('Missing Access')));
+      const mockMessagesFetch = vi.fn(() => Promise.reject(new Error('Missing Access')));
       const mockMessage = {
         channel: {
           isThread: () => true,
@@ -458,7 +458,7 @@ describe('DiscordAdapter', () => {
 
     test('should return empty array for thread with no messages', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockMessagesFetch = mock(() => Promise.resolve(new Map()));
+      const mockMessagesFetch = vi.fn(() => Promise.resolve(new Map()));
       const mockMessage = {
         channel: {
           isThread: () => true,
@@ -476,7 +476,7 @@ describe('DiscordAdapter', () => {
     test('should use exact content when at or under 100 chars', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
       const content = 'a'.repeat(100);
-      const mockStartThread = mock(() => Promise.resolve({ id: 'thread-exact' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'thread-exact' }));
       const mockMessage = {
         id: 'msg-gen-1',
         channelId: 'chan-gen',
@@ -497,7 +497,7 @@ describe('DiscordAdapter', () => {
     test('should truncate to 97 chars + ellipsis when content exceeds 100 chars', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
       const content = 'x'.repeat(150);
-      const mockStartThread = mock(() => Promise.resolve({ id: 'thread-trunc' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'thread-trunc' }));
       const mockMessage = {
         id: 'msg-gen-2',
         channelId: 'chan-gen',
@@ -517,7 +517,7 @@ describe('DiscordAdapter', () => {
 
     test('should normalize whitespace in thread name', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockStartThread = mock(() => Promise.resolve({ id: 'thread-ws' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'thread-ws' }));
       const mockMessage = {
         id: 'msg-gen-3',
         channelId: 'chan-gen',
@@ -538,7 +538,7 @@ describe('DiscordAdapter', () => {
   describe('createThreadFromMessage (via ensureThread)', () => {
     test('should pass autoArchiveDuration of 1440 (OneDay)', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockStartThread = mock(() => Promise.resolve({ id: 'thread-archive' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'thread-archive' }));
       const mockMessage = {
         id: 'msg-arc-1',
         channelId: 'chan-arc',
@@ -562,7 +562,7 @@ describe('DiscordAdapter', () => {
 
     test('should strip bot mention before generating thread name', async () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const mockStartThread = mock(() => Promise.resolve({ id: 'thread-strip' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'thread-strip' }));
       const mockMessage = {
         id: 'msg-strip-1',
         channelId: 'chan-strip',
@@ -630,7 +630,7 @@ describe('DiscordAdapter', () => {
       (mockClient as unknown as { user: null }).user = null;
 
       const mockMessage = {
-        mentions: { has: mock(() => true) },
+        mentions: { has: vi.fn(() => true) },
       } as unknown as import('discord.js').Message;
 
       const result = adapter.isBotMentioned(mockMessage);
@@ -641,7 +641,7 @@ describe('DiscordAdapter', () => {
 
     test('should pass bot user to mentions.has()', () => {
       const adapter = new DiscordAdapter('fake-token-for-testing');
-      const hasspy = mock(() => true);
+      const hasspy = vi.fn(() => true);
       const mockMessage = {
         mentions: { has: hasspy },
       } as unknown as import('discord.js').Message;
@@ -692,7 +692,7 @@ describe('DiscordAdapter', () => {
     });
 
     test('should create thread for channel message', async () => {
-      const mockStartThread = mock(() => Promise.resolve({ id: 'newthread123' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'newthread123' }));
       const mockMessage = {
         id: 'msg123',
         channelId: 'channel456',
@@ -719,7 +719,7 @@ describe('DiscordAdapter', () => {
 
     test('should truncate long thread names', async () => {
       const longContent = 'a'.repeat(150);
-      const mockStartThread = mock(() => Promise.resolve({ id: 'newthread123' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'newthread123' }));
       const mockMessage = {
         id: 'msg123',
         channelId: 'channel456',
@@ -742,7 +742,7 @@ describe('DiscordAdapter', () => {
     });
 
     test('should fall back to channel ID on thread creation error', async () => {
-      const mockStartThread = mock(() => Promise.reject(new Error('Permission denied')));
+      const mockStartThread = vi.fn(() => Promise.reject(new Error('Permission denied')));
       const mockMessage = {
         id: 'msg123',
         channelId: 'channel456',
@@ -768,7 +768,7 @@ describe('DiscordAdapter', () => {
         resolveThread = resolve;
       });
 
-      const mockStartThread = mock(() => threadPromise);
+      const mockStartThread = vi.fn(() => threadPromise);
       const mockMessage = {
         id: 'msg123',
         channelId: 'channel456',
@@ -801,7 +801,7 @@ describe('DiscordAdapter', () => {
     });
 
     test('should use Bot Response as thread name for empty content', async () => {
-      const mockStartThread = mock(() => Promise.resolve({ id: 'newthread123' }));
+      const mockStartThread = vi.fn(() => Promise.resolve({ id: 'newthread123' }));
       const mockMessage = {
         id: 'msg123',
         channelId: 'channel456',

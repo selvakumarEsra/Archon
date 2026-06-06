@@ -3,10 +3,10 @@
  * Covers concurrent-run guards, model/provider resolution, and resume logic
  * that the inner dag-executor.test.ts cannot reach.
  */
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // --- Mock logger ---
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -14,50 +14,50 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  child: vi.fn(() => mockLogger),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
 // Telemetry is fire-and-forget; mock as no-ops so the executor can call them.
 // Hoisted so tests can assert on the completion call (outcome / exit reason).
-const mockCaptureWorkflowInvoked = mock(() => {});
-const mockCaptureWorkflowCompleted = mock(() => {});
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  parseOwnerRepo: mock(() => null),
-  getRunArtifactsPath: mock(() => '/tmp/artifacts'),
-  getProjectLogsPath: mock(() => '/tmp/logs'),
+const mockCaptureWorkflowInvoked = vi.fn(() => {});
+const mockCaptureWorkflowCompleted = vi.fn(() => {});
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  parseOwnerRepo: vi.fn(() => null),
+  getRunArtifactsPath: vi.fn(() => '/tmp/artifacts'),
+  getProjectLogsPath: vi.fn(() => '/tmp/logs'),
   captureWorkflowInvoked: mockCaptureWorkflowInvoked,
   captureWorkflowCompleted: mockCaptureWorkflowCompleted,
 }));
 
 // --- Mock git ---
-mock.module('@archon/git', () => ({
-  getDefaultBranch: mock(async () => 'main'),
-  toRepoPath: mock((p: string) => p),
+vi.mock('@archon/git', () => ({
+  getDefaultBranch: vi.fn(async () => 'main'),
+  toRepoPath: vi.fn((p: string) => p),
 }));
 
 // --- Mock dag-executor ---
-const mockExecuteDagWorkflow = mock(async (): Promise<string | undefined> => undefined);
-mock.module('./dag-executor', () => ({
+const mockExecuteDagWorkflow = vi.fn(async (): Promise<string | undefined> => undefined);
+vi.mock('./dag-executor', () => ({
   executeDagWorkflow: mockExecuteDagWorkflow,
 }));
 
 // --- Mock logger functions ---
-mock.module('./logger', () => ({
-  logWorkflowStart: mock(async () => {}),
-  logWorkflowError: mock(async () => {}),
+vi.mock('./logger', () => ({
+  logWorkflowStart: vi.fn(async () => {}),
+  logWorkflowError: vi.fn(async () => {}),
 }));
 
 // --- Mock event emitter ---
 const mockEmitter = {
-  registerRun: mock(() => {}),
-  unregisterRun: mock(() => {}),
-  emit: mock(() => {}),
+  registerRun: vi.fn(() => {}),
+  unregisterRun: vi.fn(() => {}),
+  emit: vi.fn(() => {}),
 };
-mock.module('./event-emitter', () => ({
-  getWorkflowEventEmitter: mock(() => mockEmitter),
+vi.mock('./event-emitter', () => ({
+  getWorkflowEventEmitter: vi.fn(() => mockEmitter),
 }));
 
 // --- Bootstrap provider registry (after path mocks) ---
@@ -75,34 +75,34 @@ import type { WorkflowDefinition, WorkflowRun } from './schemas';
 
 function makeStore(overrides: Partial<IWorkflowStore> = {}): IWorkflowStore {
   return {
-    getActiveWorkflowRunByPath: mock(async () => null),
-    failOrphanedRuns: mock(async () => ({ count: 0 })),
-    createWorkflowRun: mock(async () => makeRun()),
-    updateWorkflowRun: mock(async () => {}),
-    failWorkflowRun: mock(async () => {}),
-    getWorkflowRun: mock(async () => ({ ...makeRun(), status: 'completed' as const })),
-    getWorkflowRunStatus: mock(async () => 'completed' as const),
-    createWorkflowEvent: mock(async () => {}),
-    findResumableRun: mock(async () => null),
-    getCompletedDagNodeOutputs: mock(async () => new Map()),
-    resumeWorkflowRun: mock(async () => makeRun()),
-    getCodebase: mock(async () => null),
-    getCodebaseEnvVars: mock(async () => ({})),
+    getActiveWorkflowRunByPath: vi.fn(async () => null),
+    failOrphanedRuns: vi.fn(async () => ({ count: 0 })),
+    createWorkflowRun: vi.fn(async () => makeRun()),
+    updateWorkflowRun: vi.fn(async () => {}),
+    failWorkflowRun: vi.fn(async () => {}),
+    getWorkflowRun: vi.fn(async () => ({ ...makeRun(), status: 'completed' as const })),
+    getWorkflowRunStatus: vi.fn(async () => 'completed' as const),
+    createWorkflowEvent: vi.fn(async () => {}),
+    findResumableRun: vi.fn(async () => null),
+    getCompletedDagNodeOutputs: vi.fn(async () => new Map()),
+    resumeWorkflowRun: vi.fn(async () => makeRun()),
+    getCodebase: vi.fn(async () => null),
+    getCodebaseEnvVars: vi.fn(async () => ({})),
     ...overrides,
   };
 }
 
 function makePlatform(): IWorkflowPlatform {
   return {
-    sendMessage: mock(async () => {}),
-    getPlatformType: mock(() => 'test' as const),
+    sendMessage: vi.fn(async () => {}),
+    getPlatformType: vi.fn(() => 'test' as const),
   } as unknown as IWorkflowPlatform;
 }
 
 function makeDeps(store?: IWorkflowStore): WorkflowDeps {
   return {
     store: store ?? makeStore(),
-    loadConfig: mock(
+    loadConfig: vi.fn(
       async (): Promise<WorkflowConfig> => ({
         assistant: 'claude' as const,
         assistants: {
@@ -113,8 +113,8 @@ function makeDeps(store?: IWorkflowStore): WorkflowDeps {
         commands: { folder: '' },
       })
     ),
-    getAgentProvider: mock(() => ({
-      run: mock(async () => {}),
+    getAgentProvider: vi.fn(() => ({
+      run: vi.fn(async () => {}),
     })),
   } as unknown as WorkflowDeps;
 }
@@ -156,7 +156,7 @@ describe('executeWorkflow', () => {
 
   describe('concurrent-run guard', () => {
     it('allows workflow when no active workflow exists', async () => {
-      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => null) });
+      const store = makeStore({ getActiveWorkflowRunByPath: vi.fn(async () => null) });
       const deps = makeDeps(store);
       const result = await executeWorkflow(
         deps,
@@ -172,7 +172,7 @@ describe('executeWorkflow', () => {
 
     it('blocks workflow when active workflow check fails', async () => {
       const store = makeStore({
-        getActiveWorkflowRunByPath: mock(async () => {
+        getActiveWorkflowRunByPath: vi.fn(async () => {
           throw new Error('DB connection lost');
         }),
       });
@@ -197,7 +197,7 @@ describe('executeWorkflow', () => {
         started_at: new Date().toISOString(), // Recent — not stale
       });
       const store = makeStore({
-        getActiveWorkflowRunByPath: mock(async () => activeRun),
+        getActiveWorkflowRunByPath: vi.fn(async () => activeRun),
       });
       const deps = makeDeps(store);
       const result = await executeWorkflow(
@@ -218,9 +218,9 @@ describe('executeWorkflow', () => {
       // a self-ID. Without these args, the dispatch's own row would match
       // and falsely trigger the guard.
       const selfRun = makeRun({ id: 'self-run-789', started_at: '2026-04-14T10:00:00.000Z' });
-      const getActiveSpy = mock(async () => null);
+      const getActiveSpy = vi.fn(async () => null);
       const store = makeStore({
-        createWorkflowRun: mock(async () => selfRun),
+        createWorkflowRun: vi.fn(async () => selfRun),
         getActiveWorkflowRunByPath: getActiveSpy,
       });
       const deps = makeDeps(store);
@@ -244,10 +244,10 @@ describe('executeWorkflow', () => {
     it('marks self as cancelled when guard fires (no zombie pending row)', async () => {
       const selfRun = makeRun({ id: 'self-run-789' });
       const otherRun = makeRun({ id: 'other-run-456', status: 'running' });
-      const updateSpy = mock(async () => {});
+      const updateSpy = vi.fn(async () => {});
       const store = makeStore({
-        createWorkflowRun: mock(async () => selfRun),
-        getActiveWorkflowRunByPath: mock(async () => otherRun),
+        createWorkflowRun: vi.fn(async () => selfRun),
+        getActiveWorkflowRunByPath: vi.fn(async () => otherRun),
         updateWorkflowRun: updateSpy,
       });
       const deps = makeDeps(store);
@@ -274,13 +274,13 @@ describe('executeWorkflow', () => {
         status: 'running',
         started_at: new Date(Date.now() - 125000).toISOString(), // 2m 5s ago
       });
-      const sendMessageSpy = mock(async () => {});
+      const sendMessageSpy = vi.fn(async () => {});
       const platform = {
         sendMessage: sendMessageSpy,
-        getPlatformType: mock(() => 'test' as const),
+        getPlatformType: vi.fn(() => 'test' as const),
       } as unknown as IWorkflowPlatform;
       const store = makeStore({
-        getActiveWorkflowRunByPath: mock(async () => otherRun),
+        getActiveWorkflowRunByPath: vi.fn(async () => otherRun),
       });
       const deps = makeDeps(store);
 
@@ -306,7 +306,7 @@ describe('executeWorkflow', () => {
     });
 
     it('skips path-lock check when mutates_checkout is false', async () => {
-      const getActiveSpy = mock(async () =>
+      const getActiveSpy = vi.fn(async () =>
         makeRun({ id: 'other-run', status: 'running' as const })
       );
       const store = makeStore({ getActiveWorkflowRunByPath: getActiveSpy });
@@ -327,7 +327,7 @@ describe('executeWorkflow', () => {
 
     it('still enforces path lock when mutates_checkout is true', async () => {
       const otherRun = makeRun({ id: 'other-run-456', status: 'running' as const });
-      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => otherRun) });
+      const store = makeStore({ getActiveWorkflowRunByPath: vi.fn(async () => otherRun) });
       const deps = makeDeps(store);
       const result = await executeWorkflow(
         deps,
@@ -345,14 +345,14 @@ describe('executeWorkflow', () => {
     it('still returns failure when guard self-cancel update throws (best-effort)', async () => {
       const selfRun = makeRun({ id: 'self-run', status: 'pending' });
       const otherRun = makeRun({ id: 'other-run', status: 'running' });
-      const updateSpy = mock(async (id: string) => {
+      const updateSpy = vi.fn(async (id: string) => {
         // Self-cancel attempt fails — must not crash, must still surface
         // the "in use" failure to the user.
         if (id === 'self-run') throw new Error('Update failed');
       });
       const store = makeStore({
-        createWorkflowRun: mock(async () => selfRun),
-        getActiveWorkflowRunByPath: mock(async () => otherRun),
+        createWorkflowRun: vi.fn(async () => selfRun),
+        getActiveWorkflowRunByPath: vi.fn(async () => otherRun),
         updateWorkflowRun: updateSpy,
       });
       const deps = makeDeps(store);
@@ -482,7 +482,7 @@ describe('executeWorkflow', () => {
       const store = makeStore();
       const deps = {
         store,
-        loadConfig: mock(
+        loadConfig: vi.fn(
           async (): Promise<WorkflowConfig> => ({
             assistant: 'claude' as const,
             assistants: { claude: {}, codex: {} },
@@ -491,8 +491,8 @@ describe('executeWorkflow', () => {
             docsPath: 'packages/docs-web/src/content/docs',
           })
         ),
-        getAgentProvider: mock(() => ({
-          run: mock(async () => {}),
+        getAgentProvider: vi.fn(() => ({
+          run: vi.fn(async () => {}),
         })),
       } as unknown as WorkflowDeps;
       await executeWorkflow(
@@ -519,7 +519,7 @@ describe('executeWorkflow', () => {
       // Two back-to-back executions of the same workflow at the same cwd
       // must not cross-leak. Resume detection lives at the caller; the
       // executor must never touch findResumableRun on its own.
-      const findSpy = mock(async () => makeRun({ id: 'stale-prior', status: 'failed' }));
+      const findSpy = vi.fn(async () => makeRun({ id: 'stale-prior', status: 'failed' }));
       const store = makeStore({ findResumableRun: findSpy });
       const deps = makeDeps(store);
       await executeWorkflow(
@@ -645,7 +645,7 @@ describe('executeWorkflow', () => {
   describe('DB env var merge', () => {
     it('merges DB env vars on top of file config envVars when codebaseId provided', async () => {
       const store = makeStore({
-        getCodebaseEnvVars: mock(async () => ({ DB_KEY: 'db_val' })),
+        getCodebaseEnvVars: vi.fn(async () => ({ DB_KEY: 'db_val' })),
       });
       const deps = makeDeps(store);
       // Override loadConfig to return file-level envVars
@@ -708,9 +708,9 @@ describe('executeWorkflow', () => {
     // suite — those errors surface at the caller now, not in the executor.
 
     it('cancels workflowRun when guard query throws (no zombie row)', async () => {
-      const updateSpy = mock(async () => {});
+      const updateSpy = vi.fn(async () => {});
       const store = makeStore({
-        getActiveWorkflowRunByPath: mock(async () => {
+        getActiveWorkflowRunByPath: vi.fn(async () => {
           throw new Error('DB connection lost during guard');
         }),
         updateWorkflowRun: updateSpy,
@@ -751,12 +751,12 @@ describe('executeWorkflow', () => {
         status: 'paused',
         started_at: new Date(Date.now() - 10000).toISOString(),
       });
-      const sendMessageSpy = mock(async () => {});
+      const sendMessageSpy = vi.fn(async () => {});
       const platform = {
         sendMessage: sendMessageSpy,
-        getPlatformType: mock(() => 'test' as const),
+        getPlatformType: vi.fn(() => 'test' as const),
       } as unknown as IWorkflowPlatform;
-      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => pausedRun) });
+      const store = makeStore({ getActiveWorkflowRunByPath: vi.fn(async () => pausedRun) });
       const deps = makeDeps(store);
 
       await executeWorkflow(deps, platform, 'conv-1', '/tmp', makeWorkflow(), 'test', 'db-conv-1');
@@ -777,12 +777,12 @@ describe('executeWorkflow', () => {
         status: 'pending',
         started_at: new Date(Date.now() - 500).toISOString(),
       });
-      const sendMessageSpy = mock(async () => {});
+      const sendMessageSpy = vi.fn(async () => {});
       const platform = {
         sendMessage: sendMessageSpy,
-        getPlatformType: mock(() => 'test' as const),
+        getPlatformType: vi.fn(() => 'test' as const),
       } as unknown as IWorkflowPlatform;
-      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => pendingRun) });
+      const store = makeStore({ getActiveWorkflowRunByPath: vi.fn(async () => pendingRun) });
       const deps = makeDeps(store);
 
       await executeWorkflow(deps, platform, 'conv-1', '/tmp', makeWorkflow(), 'test', 'db-conv-1');
@@ -798,12 +798,12 @@ describe('executeWorkflow', () => {
         status: 'running',
         started_at: new Date(Date.now() - 60000).toISOString(),
       });
-      const sendMessageSpy = mock(async () => {});
+      const sendMessageSpy = vi.fn(async () => {});
       const platform = {
         sendMessage: sendMessageSpy,
-        getPlatformType: mock(() => 'test' as const),
+        getPlatformType: vi.fn(() => 'test' as const),
       } as unknown as IWorkflowPlatform;
-      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => runningRun) });
+      const store = makeStore({ getActiveWorkflowRunByPath: vi.fn(async () => runningRun) });
       const deps = makeDeps(store);
 
       await executeWorkflow(deps, platform, 'conv-1', '/tmp', makeWorkflow(), 'test', 'db-conv-1');
@@ -817,9 +817,9 @@ describe('executeWorkflow', () => {
 
 describe('finally backstop', () => {
   it('calls failWorkflowRun when run is still running at finally', async () => {
-    const failSpy = mock(async () => {});
+    const failSpy = vi.fn(async () => {});
     const store = makeStore({
-      getWorkflowRunStatus: mock(async () => 'running' as const),
+      getWorkflowRunStatus: vi.fn(async () => 'running' as const),
       failWorkflowRun: failSpy,
     });
     const deps = makeDeps(store);
@@ -841,9 +841,9 @@ describe('finally backstop', () => {
   });
 
   it('does not call failWorkflowRun when run already completed', async () => {
-    const failSpy = mock(async () => {});
+    const failSpy = vi.fn(async () => {});
     const store = makeStore({
-      getWorkflowRunStatus: mock(async () => 'completed' as const),
+      getWorkflowRunStatus: vi.fn(async () => 'completed' as const),
       failWorkflowRun: failSpy,
     });
     const deps = makeDeps(store);
@@ -945,7 +945,7 @@ describe('telemetry wiring', () => {
     const store = makeStore();
     const deps = {
       ...makeDeps(store),
-      loadConfig: mock(
+      loadConfig: vi.fn(
         async (): Promise<WorkflowConfig> => ({
           assistant: 'claude',
           assistants: { claude: {}, codex: {} },
@@ -1018,8 +1018,8 @@ describe('hydrateResumableRun', () => {
     const resumed = makeRun({ id: 'prior-failed', status: 'running' });
     const priorNodes = new Map([['n1', 'out1']]);
     const store = makeStore({
-      getCompletedDagNodeOutputs: mock(async () => priorNodes),
-      resumeWorkflowRun: mock(async () => resumed),
+      getCompletedDagNodeOutputs: vi.fn(async () => priorNodes),
+      resumeWorkflowRun: vi.fn(async () => resumed),
     });
     const deps = makeDeps(store);
     const result = await hydrateResumableRun(deps, candidate);
@@ -1032,7 +1032,7 @@ describe('hydrateResumableRun', () => {
   it('returns null when candidate has no completed nodes and no interactive-loop state', async () => {
     const candidate = makeRun({ id: 'empty-prior', status: 'failed' });
     const store = makeStore({
-      getCompletedDagNodeOutputs: mock(async () => new Map()),
+      getCompletedDagNodeOutputs: vi.fn(async () => new Map()),
     });
     const deps = makeDeps(store);
     const result = await hydrateResumableRun(deps, candidate);
@@ -1049,8 +1049,8 @@ describe('hydrateResumableRun', () => {
     });
     const resumed = makeRun({ id: 'paused-loop', status: 'running' });
     const store = makeStore({
-      getCompletedDagNodeOutputs: mock(async () => new Map()),
-      resumeWorkflowRun: mock(async () => resumed),
+      getCompletedDagNodeOutputs: vi.fn(async () => new Map()),
+      resumeWorkflowRun: vi.fn(async () => resumed),
     });
     const deps = makeDeps(store);
     const result = await hydrateResumableRun(deps, candidate);
@@ -1062,7 +1062,7 @@ describe('hydrateResumableRun', () => {
   it('propagates DB errors from getCompletedDagNodeOutputs (no silent fallback)', async () => {
     const candidate = makeRun({ id: 'prior-failed', status: 'failed' });
     const store = makeStore({
-      getCompletedDagNodeOutputs: mock(async () => {
+      getCompletedDagNodeOutputs: vi.fn(async () => {
         throw new Error('DB read failed');
       }),
     });
@@ -1073,8 +1073,8 @@ describe('hydrateResumableRun', () => {
   it('propagates DB errors from resumeWorkflowRun (no silent fallback)', async () => {
     const candidate = makeRun({ id: 'prior-failed', status: 'failed' });
     const store = makeStore({
-      getCompletedDagNodeOutputs: mock(async () => new Map([['n1', 'v1']])),
-      resumeWorkflowRun: mock(async () => {
+      getCompletedDagNodeOutputs: vi.fn(async () => new Map([['n1', 'v1']])),
+      resumeWorkflowRun: vi.fn(async () => {
         throw new Error('DB write failed');
       }),
     });

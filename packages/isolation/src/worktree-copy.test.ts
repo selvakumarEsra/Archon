@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn, type Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach, type Mock } from 'vitest';
 import * as fs from 'fs/promises';
 import type { Stats } from 'fs';
 import { join } from 'path';
@@ -115,10 +115,10 @@ describe('worktree-copy', () => {
     let cpSpy: Mock<typeof fs.cp>;
 
     beforeEach(() => {
-      statSpy = spyOn(fs, 'stat');
-      mkdirSpy = spyOn(fs, 'mkdir');
-      copyFileSpy = spyOn(fs, 'copyFile');
-      cpSpy = spyOn(fs, 'cp');
+      statSpy = vi.spyOn(fs, 'stat');
+      mkdirSpy = vi.spyOn(fs, 'mkdir');
+      copyFileSpy = vi.spyOn(fs, 'copyFile');
+      cpSpy = vi.spyOn(fs, 'cp');
 
       mkdirSpy.mockResolvedValue(undefined);
       copyFileSpy.mockResolvedValue(undefined);
@@ -267,10 +267,10 @@ describe('worktree-copy', () => {
     let cpSpy: Mock<typeof fs.cp>;
 
     beforeEach(() => {
-      statSpy = spyOn(fs, 'stat');
-      mkdirSpy = spyOn(fs, 'mkdir');
-      copyFileSpy = spyOn(fs, 'copyFile');
-      cpSpy = spyOn(fs, 'cp');
+      statSpy = vi.spyOn(fs, 'stat');
+      mkdirSpy = vi.spyOn(fs, 'mkdir');
+      copyFileSpy = vi.spyOn(fs, 'copyFile');
+      cpSpy = vi.spyOn(fs, 'cp');
 
       mkdirSpy.mockResolvedValue(undefined);
       copyFileSpy.mockResolvedValue(undefined);

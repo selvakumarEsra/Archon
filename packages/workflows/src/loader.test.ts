@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, spyOn, mock, type Mock } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach, type Mock } from 'vitest';
 import { mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -7,25 +7,25 @@ const isWindows = process.platform === 'win32';
 
 // Inline mock logger to suppress noisy output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function () {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function () {
     return mockLogger;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
 
 // Mock @archon/paths: suppress logger + pass through real path utilities
 const realArchonPaths = await import('@archon/paths');
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   ...realArchonPaths,
-  createLogger: mock(() => mockLogger),
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Bootstrap provider registry (needed by isRegisteredProvider checks at load time)
@@ -1149,7 +1149,7 @@ nodes:
   describe('discoverWorkflowsWithConfig', () => {
     it('should pass loadDefaults from config to discoverWorkflows', async () => {
       const { discoverWorkflowsWithConfig } = await import('./workflow-discovery');
-      const mockLoadConfig = mock(async () => ({
+      const mockLoadConfig = vi.fn(async () => ({
         defaults: { loadDefaultWorkflows: false },
       }));
 
@@ -1163,7 +1163,7 @@ nodes:
 
     it('should default to loadDefaults: true when config load fails', async () => {
       const { discoverWorkflowsWithConfig } = await import('./workflow-discovery');
-      const mockLoadConfig = mock(async () => {
+      const mockLoadConfig = vi.fn(async () => {
         throw new Error('Config not found');
       });
 
@@ -1195,7 +1195,7 @@ nodes:
       process.env.ARCHON_HOME = homeDir;
       delete process.env.ARCHON_DOCKER;
       try {
-        const mockLoadConfig = mock(async () => ({
+        const mockLoadConfig = vi.fn(async () => ({
           defaults: { loadDefaultWorkflows: false },
         }));
 
@@ -1223,7 +1223,7 @@ nodes:
     let isBinaryBuildSpy: Mock<typeof bundledDefaults.isBinaryBuild>;
 
     beforeEach(() => {
-      isBinaryBuildSpy = spyOn(bundledDefaults, 'isBinaryBuild');
+      isBinaryBuildSpy = vi.spyOn(bundledDefaults, 'isBinaryBuild');
     });
 
     afterEach(() => {
@@ -2747,7 +2747,7 @@ nodes:
       // The per-project config opt-out must not be evaluated when there is no
       // project context — running loadConfig with no cwd would silently apply
       // home-dir or working-dir defaults to a request that has neither.
-      const mockLoadConfig = mock(async () => ({ defaults: { loadDefaultWorkflows: true } }));
+      const mockLoadConfig = vi.fn(async () => ({ defaults: { loadDefaultWorkflows: true } }));
       await discoverWorkflowsWithConfig(null, mockLoadConfig);
       expect(mockLoadConfig).not.toHaveBeenCalled();
     });

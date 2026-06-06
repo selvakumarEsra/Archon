@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import {
   handleBuilderKeydown,
   isInputTarget,
@@ -51,7 +51,7 @@ function makeEvent(
     metaKey: false,
     ctrlKey: false,
     shiftKey: false,
-    preventDefault: mock(() => {}),
+    preventDefault: vi.fn(() => {}),
   } as unknown as KeyboardEvent;
 }
 

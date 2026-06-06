@@ -1,24 +1,24 @@
-import type { Mock } from 'bun:test';
-import { mock } from 'bun:test';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import type { WorkflowLoadResult } from '@archon/workflows/schemas/workflow';
 import type { ParseResult } from '@archon/workflows/loader';
 
 /**
- * Register all 4 @archon/workflows mock.module() calls at once.
+ * Register all 4 @archon/workflows vi.mock() calls at once.
  * Must be called before importing the module under test.
  */
 export function mockAllWorkflowModules(): void {
-  mock.module('@archon/workflows/workflow-discovery', makeDiscoverWorkflowsMock);
-  mock.module('@archon/workflows/loader', makeLoaderMock);
-  mock.module('@archon/workflows/command-validation', makeCommandValidationMock);
-  mock.module('@archon/workflows/defaults', makeDefaultsMock);
+  vi.mock('@archon/workflows/workflow-discovery', makeDiscoverWorkflowsMock);
+  vi.mock('@archon/workflows/loader', makeLoaderMock);
+  vi.mock('@archon/workflows/command-validation', makeCommandValidationMock);
+  vi.mock('@archon/workflows/defaults', makeDefaultsMock);
 }
 
 export function makeDiscoverWorkflowsMock(): {
   discoverWorkflowsWithConfig: Mock<() => Promise<WorkflowLoadResult>>;
 } {
   return {
-    discoverWorkflowsWithConfig: mock(
+    discoverWorkflowsWithConfig: vi.fn(
       async (): Promise<WorkflowLoadResult> => ({ workflows: [], errors: [] })
     ),
   };
@@ -28,7 +28,7 @@ export function makeLoaderMock(): {
   parseWorkflow: Mock<() => ParseResult>;
 } {
   return {
-    parseWorkflow: mock(
+    parseWorkflow: vi.fn(
       (): ParseResult => ({
         workflow: null,
         error: { filename: '', error: 'stub', errorType: 'parse_error' },
@@ -45,7 +45,7 @@ export function makeCommandValidationMock(): {
   isValidCommandName: Mock<() => boolean>;
 } {
   return {
-    isValidCommandName: mock(() => true),
+    isValidCommandName: vi.fn(() => true),
   };
 }
 
@@ -57,6 +57,6 @@ export function makeDefaultsMock(): {
   return {
     BUNDLED_WORKFLOWS: {},
     BUNDLED_COMMANDS: {},
-    isBinaryBuild: mock(() => false),
+    isBinaryBuild: vi.fn(() => false),
   };
 }

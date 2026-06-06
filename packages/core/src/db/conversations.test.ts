@@ -1,10 +1,10 @@
-import { mock, describe, test, expect, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
 
 // Mock the connection module before importing the module under test
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: {
     query: mockQuery,
   },

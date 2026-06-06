@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import type { ConversationLockManager } from '@archon/core';
 import type { WebAdapter } from '../adapters/web';
@@ -9,7 +9,7 @@ import { mockAllWorkflowModules } from '../test/workflow-mock-factories';
 // Mock setup — must be declared before any dynamic imports of mocked modules
 // ---------------------------------------------------------------------------
 
-const mockGetCodebase = mock(
+const mockGetCodebase = vi.fn(
   async (_id: string) =>
     null as null | {
       id: string;
@@ -22,24 +22,24 @@ const mockGetCodebase = mock(
       updated_at: string;
     }
 );
-const mockListCodebases = mock(async () => [] as (typeof MOCK_CODEBASE)[]);
-const mockDeleteCodebase = mock(async (_id: string) => {});
-const mockCloneRepository = mock(async (_url: string) => ({
+const mockListCodebases = vi.fn(async () => [] as (typeof MOCK_CODEBASE)[]);
+const mockDeleteCodebase = vi.fn(async (_id: string) => {});
+const mockCloneRepository = vi.fn(async (_url: string) => ({
   codebaseId: 'clone-uuid-1',
   alreadyExisted: false,
 }));
-const mockRegisterRepository = mock(async (_path: string) => ({
+const mockRegisterRepository = vi.fn(async (_path: string) => ({
   codebaseId: 'register-uuid-1',
   alreadyExisted: false,
 }));
-const mockListByCodebase = mock(async (_id: string) => [] as unknown[]);
-const mockRemoveWorktree = mock(async () => {});
-const mockUpdateStatus = mock(async (_id: string, _status: string) => {});
+const mockListByCodebase = vi.fn(async (_id: string) => [] as unknown[]);
+const mockRemoveWorktree = vi.fn(async () => {});
+const mockUpdateStatus = vi.fn(async (_id: string, _status: string) => {});
 
-mock.module('@archon/core', () => ({
-  handleMessage: mock(async () => {}),
+vi.mock('@archon/core', () => ({
+  handleMessage: vi.fn(async () => {}),
   getDatabaseType: () => 'sqlite',
-  loadConfig: mock(async () => ({})),
+  loadConfig: vi.fn(async () => ({})),
   cloneRepository: mockCloneRepository,
   registerRepository: mockRegisterRepository,
   ConversationNotFoundError: class ConversationNotFoundError extends Error {
@@ -49,57 +49,57 @@ mock.module('@archon/core', () => ({
     }
   },
   getArchonWorkspacesPath: () => '/tmp/.archon/workspaces',
-  generateAndSetTitle: mock(async () => {}),
+  generateAndSetTitle: vi.fn(async () => {}),
   createLogger: () => ({
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
-    child: mock(function (this: unknown) {
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
+    child: vi.fn(function (this: unknown) {
       return this;
     }),
-    bindings: mock(() => ({ module: 'test' })),
-    isLevelEnabled: mock(() => true),
+    bindings: vi.fn(() => ({ module: 'test' })),
+    isLevelEnabled: vi.fn(() => true),
     level: 'info',
   }),
 }));
 
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => ({
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
-    child: mock(function (this: unknown) {
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
+    child: vi.fn(function (this: unknown) {
       return this;
     }),
-    bindings: mock(() => ({ module: 'test' })),
-    isLevelEnabled: mock(() => true),
+    bindings: vi.fn(() => ({ module: 'test' })),
+    isLevelEnabled: vi.fn(() => true),
     level: 'info',
   }),
-  getWorkflowFolderSearchPaths: mock(() => ['.archon/workflows']),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands']),
-  getDefaultCommandsPath: mock(() => '/tmp/.archon-test-nonexistent/commands/defaults'),
-  getDefaultWorkflowsPath: mock(() => '/tmp/.archon-test-nonexistent/workflows/defaults'),
+  getWorkflowFolderSearchPaths: vi.fn(() => ['.archon/workflows']),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands']),
+  getDefaultCommandsPath: vi.fn(() => '/tmp/.archon-test-nonexistent/commands/defaults'),
+  getDefaultWorkflowsPath: vi.fn(() => '/tmp/.archon-test-nonexistent/workflows/defaults'),
   getArchonWorkspacesPath: () => '/tmp/.archon/workspaces',
 }));
 
 mockAllWorkflowModules();
 
-mock.module('@archon/git', () => ({
+vi.mock('@archon/git', () => ({
   removeWorktree: mockRemoveWorktree,
   toRepoPath: (p: string) => p,
   toWorktreePath: (p: string) => p,
 }));
 
-mock.module('@archon/core/db/conversations', () => ({
-  findConversationByPlatformId: mock(async () => null),
-  listConversations: mock(async () => []),
-  getOrCreateConversation: mock(async () => ({
+vi.mock('@archon/core/db/conversations', () => ({
+  findConversationByPlatformId: vi.fn(async () => null),
+  listConversations: vi.fn(async () => []),
+  getOrCreateConversation: vi.fn(async () => ({
     id: 'internal-uuid-123',
     platform_conversation_id: 'web-test-abc',
     title: null,
@@ -109,40 +109,40 @@ mock.module('@archon/core/db/conversations', () => ({
     deleted_at: null,
     codebase_id: null,
   })),
-  softDeleteConversation: mock(async () => {}),
-  updateConversationTitle: mock(async () => {}),
-  getConversationById: mock(async () => null),
+  softDeleteConversation: vi.fn(async () => {}),
+  updateConversationTitle: vi.fn(async () => {}),
+  getConversationById: vi.fn(async () => null),
 }));
 
-mock.module('@archon/core/db/codebases', () => ({
+vi.mock('@archon/core/db/codebases', () => ({
   listCodebases: mockListCodebases,
   getCodebase: mockGetCodebase,
   deleteCodebase: mockDeleteCodebase,
 }));
 
-mock.module('@archon/core/db/isolation-environments', () => ({
+vi.mock('@archon/core/db/isolation-environments', () => ({
   listByCodebase: mockListByCodebase,
   updateStatus: mockUpdateStatus,
 }));
 
-mock.module('@archon/core/db/workflows', () => ({
-  listWorkflowRuns: mock(async () => []),
-  listDashboardRuns: mock(async () => ({
+vi.mock('@archon/core/db/workflows', () => ({
+  listWorkflowRuns: vi.fn(async () => []),
+  listDashboardRuns: vi.fn(async () => ({
     runs: [],
     total: 0,
     counts: { all: 0, running: 0, completed: 0, failed: 0, cancelled: 0, pending: 0 },
   })),
-  getWorkflowRun: mock(async () => null),
-  cancelWorkflowRun: mock(async () => {}),
-  getWorkflowRunByWorkerPlatformId: mock(async () => null),
+  getWorkflowRun: vi.fn(async () => null),
+  cancelWorkflowRun: vi.fn(async () => {}),
+  getWorkflowRunByWorkerPlatformId: vi.fn(async () => null),
 }));
 
-mock.module('@archon/core/db/workflow-events', () => ({
-  listWorkflowEvents: mock(async () => []),
+vi.mock('@archon/core/db/workflow-events', () => ({
+  listWorkflowEvents: vi.fn(async () => []),
 }));
 
-mock.module('@archon/core/db/messages', () => ({
-  addMessage: mock(async () => ({
+vi.mock('@archon/core/db/messages', () => ({
+  addMessage: vi.fn(async () => ({
     id: 'msg-1',
     conversation_id: 'conv-1',
     role: 'user',
@@ -150,14 +150,14 @@ mock.module('@archon/core/db/messages', () => ({
     metadata: '{}',
     created_at: new Date().toISOString(),
   })),
-  listMessages: mock(async () => []),
+  listMessages: vi.fn(async () => []),
 }));
 
-mock.module('@archon/core/utils/commands', () => ({
-  findMarkdownFilesRecursive: mock(async () => []),
+vi.mock('@archon/core/utils/commands', () => ({
+  findMarkdownFilesRecursive: vi.fn(async () => []),
 }));
 
-// Import the module under test AFTER all mock.module() calls
+// Import the module under test AFTER all vi.mock() calls
 import { registerApiRoutes } from './api';
 
 // ---------------------------------------------------------------------------
@@ -196,16 +196,16 @@ const MOCK_ENV = {
 function makeApp(): OpenAPIHono {
   const app = new OpenAPIHono({ defaultHook: validationErrorHook });
   const mockWebAdapter = {
-    setConversationDbId: mock((_platformId: string, _dbId: string) => {}),
-    emitSSE: mock(async () => {}),
-    emitLockEvent: mock(async () => {}),
+    setConversationDbId: vi.fn((_platformId: string, _dbId: string) => {}),
+    emitSSE: vi.fn(async () => {}),
+    emitLockEvent: vi.fn(async () => {}),
   } as unknown as WebAdapter;
   const mockLockManager = {
-    acquireLock: mock(async (_id: string, fn: () => Promise<void>) => {
+    acquireLock: vi.fn(async (_id: string, fn: () => Promise<void>) => {
       await fn();
       return { status: 'started' };
     }),
-    getStats: mock(() => ({ active: 0, queued: 0 })),
+    getStats: vi.fn(() => ({ active: 0, queued: 0 })),
   } as unknown as ConversationLockManager;
   registerApiRoutes(app, mockWebAdapter, mockLockManager);
   return app;

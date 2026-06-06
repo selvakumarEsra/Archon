@@ -1,27 +1,27 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // Mock fs/promises before importing the module under test
-const mockReaddir = mock(async (_path: string): Promise<string[]> => []);
-const mockStat = mock(async (_path: string) => ({ isDirectory: () => false }));
+const mockReaddir = vi.fn(async (_path: string): Promise<string[]> => []);
+const mockStat = vi.fn(async (_path: string) => ({ isDirectory: () => false }));
 
-mock.module('fs/promises', () => ({
+vi.mock('fs/promises', () => ({
   readdir: mockReaddir,
   stat: mockStat,
 }));
 
 // Mock logger
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
 };
 let mockHomeScriptsPath = '/home/scripts';
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getHomeScriptsPath: mock(() => mockHomeScriptsPath),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getHomeScriptsPath: vi.fn(() => mockHomeScriptsPath),
 }));
 
 import { discoverScripts, discoverScriptsForCwd, getDefaultScripts } from './script-discovery';

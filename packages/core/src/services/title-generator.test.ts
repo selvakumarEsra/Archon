@@ -1,4 +1,4 @@
-import { mock, describe, test, expect, beforeEach, type Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, type Mock } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 import type { MessageChunk } from '../types';
 import type { SendQueryOptions } from '@archon/providers/types';
@@ -6,21 +6,21 @@ import type { SendQueryOptions } from '@archon/providers/types';
 // ─── Mock setup (BEFORE importing module under test) ─────────────────────────
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // DB mock
-const mockUpdateConversationTitle = mock(() => Promise.resolve()) as Mock<
+const mockUpdateConversationTitle = vi.fn(() => Promise.resolve()) as Mock<
   (id: string, title: string) => Promise<void>
 >;
 
-mock.module('../db/conversations', () => ({
+vi.mock('../db/conversations', () => ({
   updateConversationTitle: mockUpdateConversationTitle,
 }));
 
 // AI client mock — sendQuery returns an AsyncGenerator<MessageChunk>
-const mockSendQuery = mock(async function* (): AsyncGenerator<MessageChunk> {
+const mockSendQuery = vi.fn(async function* (): AsyncGenerator<MessageChunk> {
   yield { type: 'assistant', content: 'Summarize Project README' };
   yield { type: 'result' };
 }) as Mock<
@@ -32,12 +32,12 @@ const mockSendQuery = mock(async function* (): AsyncGenerator<MessageChunk> {
   ) => AsyncGenerator<MessageChunk>
 >;
 
-const mockGetAgentProvider = mock(() => ({
+const mockGetAgentProvider = vi.fn(() => ({
   sendQuery: mockSendQuery,
   getType: () => 'claude',
 }));
 
-mock.module('@archon/providers', () => ({
+vi.mock('@archon/providers', () => ({
   getAgentProvider: mockGetAgentProvider,
 }));
 

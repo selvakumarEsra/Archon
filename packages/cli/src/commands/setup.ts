@@ -528,7 +528,7 @@ async function collectPiConfig(): Promise<{
  * builds at setup time is preferable to a silent runtime failure.
  *
  * The `loader` parameter is injected in tests so we don't need
- * `mock.module()` on `@archon/providers` (which would pollute other tests).
+ * `vi.mock()` on `@archon/providers` (which would pollute other tests).
  */
 export async function checkPiModule(
   loader: () => Promise<unknown> = () => import('@archon/providers')

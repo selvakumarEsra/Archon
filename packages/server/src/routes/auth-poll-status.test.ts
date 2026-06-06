@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { mapDeviceFlowErrorToPollStatus } from './auth-poll-status';
 
 describe('mapDeviceFlowErrorToPollStatus', () => {

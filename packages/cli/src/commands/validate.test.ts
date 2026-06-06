@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { vi, afterEach, beforeEach, describe, expect, test } from 'vitest';
 
-const mockDiscoverWorkflowsWithConfig = mock(() => Promise.resolve({ workflows: [], errors: [] }));
+const mockDiscoverWorkflowsWithConfig = vi.fn(() => Promise.resolve({ workflows: [], errors: [] }));
 
-mock.module('@archon/workflows/workflow-discovery', () => ({
+vi.mock('@archon/workflows/workflow-discovery', () => ({
   discoverWorkflowsWithConfig: mockDiscoverWorkflowsWithConfig,
 }));
 
-const mockLoadRepoConfig = mock(() => Promise.resolve(null));
-const mockLoadConfig = mock(() =>
+const mockLoadRepoConfig = vi.fn(() => Promise.resolve(null));
+const mockLoadConfig = vi.fn(() =>
   Promise.resolve({
     assistant: 'claude',
     aliases: {},
@@ -15,7 +15,7 @@ const mockLoadConfig = mock(() =>
   })
 );
 
-mock.module('@archon/core', () => ({
+vi.mock('@archon/core', () => ({
   loadConfig: mockLoadConfig,
   loadRepoConfig: mockLoadRepoConfig,
 }));
@@ -25,8 +25,8 @@ import { validateWorkflowsCommand } from './validate';
 describe('validateWorkflowsCommand', () => {
   const originalLog = console.log;
   const originalError = console.error;
-  const mockConsoleLog = mock(() => {});
-  const mockConsoleError = mock(() => {});
+  const mockConsoleLog = vi.fn(() => {});
+  const mockConsoleError = vi.fn(() => {});
 
   beforeEach(() => {
     mockDiscoverWorkflowsWithConfig.mockClear();

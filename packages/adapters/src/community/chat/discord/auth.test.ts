@@ -1,7 +1,7 @@
 /**
  * Unit tests for Discord authorization utilities
  */
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { parseAllowedUserIds, isDiscordUserAuthorized } from './auth';
 
 describe('discord-auth', () => {

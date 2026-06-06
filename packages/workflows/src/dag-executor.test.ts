@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, mock, spyOn, type Mock } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach, type Mock } from 'vitest';
 import { mkdir, writeFile, rm, readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -6,7 +6,7 @@ import * as git from '@archon/git';
 
 // --- Mock logger (MUST come before imports of modules under test) ---
 
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -14,13 +14,13 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
+  child: vi.fn(() => mockLogger),
 };
 // Hoisted telemetry mock — declared before the mock.module factory runs so the
 // completion-telemetry tests can assert on it.
-const mockCaptureWorkflowCompleted = mock(() => {});
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+const mockCaptureWorkflowCompleted = vi.fn(() => {});
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
   getCommandFolderSearchPaths: (folder?: string) => {
     const paths = ['.archon/commands'];
     if (folder) paths.unshift(folder);
@@ -66,7 +66,7 @@ import { buildAiProfile } from './model-validation';
 
 function createMockStore(): IWorkflowStore {
   return {
-    createWorkflowRun: mock(() =>
+    createWorkflowRun: vi.fn(() =>
       Promise.resolve({
         id: 'mock-run-id',
         workflow_name: 'mock',
@@ -82,11 +82,11 @@ function createMockStore(): IWorkflowStore {
         working_path: null,
       })
     ),
-    getWorkflowRun: mock(() => Promise.resolve(null)),
-    getActiveWorkflowRunByPath: mock(() => Promise.resolve(null)),
-    failOrphanedRuns: mock(() => Promise.resolve({ count: 0 })),
-    findResumableRun: mock(() => Promise.resolve(null)),
-    resumeWorkflowRun: mock(() =>
+    getWorkflowRun: vi.fn(() => Promise.resolve(null)),
+    getActiveWorkflowRunByPath: vi.fn(() => Promise.resolve(null)),
+    failOrphanedRuns: vi.fn(() => Promise.resolve({ count: 0 })),
+    findResumableRun: vi.fn(() => Promise.resolve(null)),
+    resumeWorkflowRun: vi.fn(() =>
       Promise.resolve({
         id: 'mock-run-id',
         workflow_name: 'mock',
@@ -102,20 +102,20 @@ function createMockStore(): IWorkflowStore {
         working_path: null,
       })
     ),
-    updateWorkflowRun: mock(() => Promise.resolve()),
-    updateWorkflowActivity: mock(() => Promise.resolve()),
-    getWorkflowRunStatus: mock(() => Promise.resolve('running' as const)),
-    completeWorkflowRun: mock(() => Promise.resolve()),
-    failWorkflowRun: mock(() => Promise.resolve()),
-    pauseWorkflowRun: mock(() => Promise.resolve()),
-    cancelWorkflowRun: mock(() => Promise.resolve()),
-    createWorkflowEvent: mock(() => Promise.resolve()),
-    getCompletedDagNodeOutputs: mock(() => Promise.resolve(new Map<string, string>())),
-    getCodebase: mock(() => Promise.resolve(null)),
-    getCodebaseEnvVars: mock(() => Promise.resolve({})),
-    getWorkflowNodeSession: mock(() => Promise.resolve(null)),
-    upsertWorkflowNodeSession: mock(() => Promise.resolve()),
-    deleteWorkflowNodeSessions: mock(() => Promise.resolve({ deleted: 0 })),
+    updateWorkflowRun: vi.fn(() => Promise.resolve()),
+    updateWorkflowActivity: vi.fn(() => Promise.resolve()),
+    getWorkflowRunStatus: vi.fn(() => Promise.resolve('running' as const)),
+    completeWorkflowRun: vi.fn(() => Promise.resolve()),
+    failWorkflowRun: vi.fn(() => Promise.resolve()),
+    pauseWorkflowRun: vi.fn(() => Promise.resolve()),
+    cancelWorkflowRun: vi.fn(() => Promise.resolve()),
+    createWorkflowEvent: vi.fn(() => Promise.resolve()),
+    getCompletedDagNodeOutputs: vi.fn(() => Promise.resolve(new Map<string, string>())),
+    getCodebase: vi.fn(() => Promise.resolve(null)),
+    getCodebaseEnvVars: vi.fn(() => Promise.resolve({})),
+    getWorkflowNodeSession: vi.fn(() => Promise.resolve(null)),
+    upsertWorkflowNodeSession: vi.fn(() => Promise.resolve()),
+    deleteWorkflowNodeSessions: vi.fn(() => Promise.resolve({ deleted: 0 })),
   };
 }
 
@@ -153,12 +153,12 @@ const mockCodexCapabilities = () => ({
 });
 
 /** Mock AI sendQuery generator */
-const mockSendQueryDag = mock(function* () {
+const mockSendQueryDag = vi.fn(function* () {
   yield { type: 'assistant', content: 'DAG AI response' };
   yield { type: 'result', sessionId: 'dag-session-id' };
 });
 
-const mockGetAgentProviderDag = mock(() => ({
+const mockGetAgentProviderDag = vi.fn(() => ({
   sendQuery: mockSendQueryDag,
   getType: () => 'claude',
   getCapabilities: mockClaudeCapabilities,
@@ -169,7 +169,7 @@ function createMockDeps(storeOverride?: IWorkflowStore): WorkflowDeps {
   return {
     store,
     getAgentProvider: mockGetAgentProviderDag,
-    loadConfig: mock(() =>
+    loadConfig: vi.fn(() =>
       Promise.resolve({
         assistant: 'claude' as const,
         commands: {},
@@ -182,10 +182,10 @@ function createMockDeps(storeOverride?: IWorkflowStore): WorkflowDeps {
 
 function createMockPlatform(): IWorkflowPlatform {
   return {
-    sendMessage: mock(() => Promise.resolve()),
-    getStreamingMode: mock(() => 'batch' as const),
-    getPlatformType: mock(() => 'test'),
-    sendStructuredEvent: mock(() => Promise.resolve()),
+    sendMessage: vi.fn(() => Promise.resolve()),
+    getStreamingMode: vi.fn(() => 'batch' as const),
+    getPlatformType: vi.fn(() => 'test'),
+    sendStructuredEvent: vi.fn(() => Promise.resolve()),
   };
 }
 
@@ -1763,7 +1763,9 @@ describe('executeDagWorkflow -- bash nodes', () => {
   });
 
   it('passes config.envVars to bash subprocesses', async () => {
-    const execSpy = spyOn(git, 'execFileAsync').mockResolvedValue({ stdout: 'ok\n', stderr: '' });
+    const execSpy = vi
+      .spyOn(git, 'execFileAsync')
+      .mockResolvedValue({ stdout: 'ok\n', stderr: '' });
     const mockDeps = createMockDeps();
     const platform = createMockPlatform();
     const workflowRun = makeWorkflowRun('bash-env-run-id');
@@ -1843,7 +1845,9 @@ describe('executeDagWorkflow -- bash nodes', () => {
   });
 
   it('passes user message through env vars, not string substitution, preventing shell injection', async () => {
-    const execSpy = spyOn(git, 'execFileAsync').mockResolvedValue({ stdout: 'ok\n', stderr: '' });
+    const execSpy = vi
+      .spyOn(git, 'execFileAsync')
+      .mockResolvedValue({ stdout: 'ok\n', stderr: '' });
     try {
       const mockDeps = createMockDeps();
       const platform = createMockPlatform();
@@ -6467,7 +6471,7 @@ describe('executeDagWorkflow -- credit exhaustion', () => {
   });
 
   it('marks node as failed when assistant output contains credit exhaustion text', async () => {
-    const creditExhaustedQuery = mock(function* () {
+    const creditExhaustedQuery = vi.fn(function* () {
       yield { type: 'assistant', content: "You're out of extra usage · resets in 2h" };
       yield { type: 'result', sessionId: 'dag-session-credit' };
     });
@@ -8103,7 +8107,9 @@ describe('executeDagWorkflow -- script nodes', () => {
   });
 
   it('passes config.envVars to script subprocesses', async () => {
-    const execSpy = spyOn(git, 'execFileAsync').mockResolvedValue({ stdout: 'ok\n', stderr: '' });
+    const execSpy = vi
+      .spyOn(git, 'execFileAsync')
+      .mockResolvedValue({ stdout: 'ok\n', stderr: '' });
     const mockDeps = createMockDeps();
     const platform = createMockPlatform();
     const workflowRun = makeWorkflowRun('script-env-run-id');

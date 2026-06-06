@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import pino from 'pino';
 
 // Previous test files mock './logger' via mock.module which persists across files
@@ -6,7 +6,7 @@ import pino from 'pino';
 const VALID_LEVELS = new Set(['fatal', 'error', 'warn', 'info', 'debug', 'trace']);
 const realRootLogger = pino({ level: 'info' });
 
-mock.module('./logger', () => ({
+vi.mock('./logger', () => ({
   rootLogger: realRootLogger,
   createLogger: (module: string) => realRootLogger.child({ module }),
   setLogLevel: (level: string) => {

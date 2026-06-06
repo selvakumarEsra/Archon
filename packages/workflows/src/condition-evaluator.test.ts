@@ -1,8 +1,8 @@
-import { describe, it, expect, mock } from 'bun:test';
+import { vi, describe, it, expect } from 'vitest';
 
 // --- Mock logger (MUST come before imports of modules under test) ---
 
-const mockLogFn = mock(() => {});
+const mockLogFn = vi.fn(() => {});
 const mockLogger = {
   info: mockLogFn,
   warn: mockLogFn,
@@ -10,10 +10,10 @@ const mockLogger = {
   debug: mockLogFn,
   trace: mockLogFn,
   fatal: mockLogFn,
-  child: mock(() => mockLogger),
+  child: vi.fn(() => mockLogger),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // --- Imports (after mocks) ---

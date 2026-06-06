@@ -1,42 +1,42 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mock modules before importing the module under test
 // ---------------------------------------------------------------------------
 
-const mockWorktreeExists = mock(() => Promise.resolve(true));
-const mockToWorktreePath = mock((p: string) => p);
-mock.module('@archon/git', () => ({
+const mockWorktreeExists = vi.fn(() => Promise.resolve(true));
+const mockToWorktreePath = vi.fn((p: string) => p);
+vi.mock('@archon/git', () => ({
   worktreeExists: mockWorktreeExists,
   toWorktreePath: mockToWorktreePath,
 }));
 
-const mockListAllActiveWithCodebase = mock(() => Promise.resolve([]));
-const mockListByCodebaseWithAge = mock(() => Promise.resolve([]));
-const mockUpdateStatus = mock(() => Promise.resolve());
-mock.module('../db/isolation-environments', () => ({
+const mockListAllActiveWithCodebase = vi.fn(() => Promise.resolve([]));
+const mockListByCodebaseWithAge = vi.fn(() => Promise.resolve([]));
+const mockUpdateStatus = vi.fn(() => Promise.resolve());
+vi.mock('../db/isolation-environments', () => ({
   listAllActiveWithCodebase: mockListAllActiveWithCodebase,
   listByCodebaseWithAge: mockListByCodebaseWithAge,
   updateStatus: mockUpdateStatus,
 }));
 
-const mockCleanupStale = mock(() => Promise.resolve({ removed: 0, errors: [] }));
-const mockCleanupMerged = mock(() => Promise.resolve({ removed: 0, errors: [] }));
-mock.module('../services/cleanup-service', () => ({
+const mockCleanupStale = vi.fn(() => Promise.resolve({ removed: 0, errors: [] }));
+const mockCleanupMerged = vi.fn(() => Promise.resolve({ removed: 0, errors: [] }));
+vi.mock('../services/cleanup-service', () => ({
   cleanupStaleWorktrees: mockCleanupStale,
   cleanupMergedWorktrees: mockCleanupMerged,
 }));
 
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Import AFTER mocks

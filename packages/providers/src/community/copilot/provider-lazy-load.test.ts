@@ -16,11 +16,11 @@
  * process-wide and would interfere with `provider.test.ts`, which installs
  * richer SDK stubs (see CLAUDE.md on test isolation).
  */
-import { expect, mock, test } from 'bun:test';
+import { vi, expect, test } from 'vitest';
 
 let copilotSdkLoaded = false;
 
-mock.module('@github/copilot-sdk', () => {
+vi.mock('@github/copilot-sdk', () => {
   copilotSdkLoaded = true;
   return {};
 });

@@ -78,15 +78,9 @@ if (process.env.MY_PLATFORM_TOKEN) {
 
 ## Testing
 
-### Mock isolation (required)
+### Mock isolation
 
-Bun's `mock.module()` is process-global and irreversible — `mock.restore()` does NOT undo it. Your test file **must** run in its own `bun test` invocation if it mocks modules differently from existing test files in the same batch.
-
-Check `packages/adapters/package.json` to see which test files share a batch. If your test mocks the same modules (e.g., `@archon/paths`) with different exports, split it into a separate batch:
-
-```json
-"test": "... existing batches ... && bun test src/community/chat/your-adapter/adapter.test.ts"
-```
+Vitest runs each test file in its own worker process, so `vi.mock()` calls scoped to one file do not leak across files. You do not need to plan batch splits — just add your test file and the `vitest run` script picks it up automatically.
 
 ### Lazy logger pattern
 

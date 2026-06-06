@@ -1,11 +1,11 @@
-import { describe, test, expect, mock } from 'bun:test';
+import { vi, describe, test, expect } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import type { ConversationLockManager } from '@archon/core';
 import type { WebAdapter } from '../adapters/web';
 import { validationErrorHook } from './openapi-defaults';
 import { mockAllWorkflowModules } from '../test/workflow-mock-factories';
 
-const mockFindConversationByPlatformId = mock(
+const mockFindConversationByPlatformId = vi.fn(
   async (_platformId: string) =>
     null as null | {
       id: string;
@@ -18,21 +18,21 @@ const mockFindConversationByPlatformId = mock(
       codebase_id: string | null;
     }
 );
-const mockSoftDeleteConversation = mock(async (_id: string) => {});
-const mockUpdateConversationTitle = mock(async (_id: string, _title: string) => {});
+const mockSoftDeleteConversation = vi.fn(async (_id: string) => {});
+const mockUpdateConversationTitle = vi.fn(async (_id: string, _title: string) => {});
 
-const mockGenerateAndSetTitle = mock(async () => {});
-mock.module('@archon/core', () => ({
-  handleMessage: mock(async () => {}),
+const mockGenerateAndSetTitle = vi.fn(async () => {});
+vi.mock('@archon/core', () => ({
+  handleMessage: vi.fn(async () => {}),
   getDatabaseType: () => 'sqlite',
-  loadConfig: mock(async () => ({})),
-  getWorkflowFolderSearchPaths: mock(() => ['.archon/workflows']),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands', '.archon/commands/defaults']),
-  getDefaultCommandsPath: mock(() => '/tmp/.archon-test-nonexistent/commands/defaults'),
-  getDefaultWorkflowsPath: mock(() => '/tmp/.archon-test-nonexistent/workflows/defaults'),
-  cloneRepository: mock(async () => {}),
-  registerRepository: mock(async () => ({ success: true })),
-  removeWorktree: mock(async () => ({ success: true })),
+  loadConfig: vi.fn(async () => ({})),
+  getWorkflowFolderSearchPaths: vi.fn(() => ['.archon/workflows']),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands', '.archon/commands/defaults']),
+  getDefaultCommandsPath: vi.fn(() => '/tmp/.archon-test-nonexistent/commands/defaults'),
+  getDefaultWorkflowsPath: vi.fn(() => '/tmp/.archon-test-nonexistent/workflows/defaults'),
+  cloneRepository: vi.fn(async () => {}),
+  registerRepository: vi.fn(async () => ({ success: true })),
+  removeWorktree: vi.fn(async () => ({ success: true })),
   ConversationNotFoundError: class ConversationNotFoundError extends Error {
     constructor(id: string) {
       super(`Conversation not found: ${id}`);
@@ -42,29 +42,29 @@ mock.module('@archon/core', () => ({
   generateAndSetTitle: mockGenerateAndSetTitle,
   getArchonWorkspacesPath: () => '/tmp/.archon/workspaces',
   createLogger: () => ({
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
-    child: mock(function (this: unknown) {
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
+    child: vi.fn(function (this: unknown) {
       return this;
     }),
-    bindings: mock(() => ({ module: 'test' })),
-    isLevelEnabled: mock(() => true),
+    bindings: vi.fn(() => ({ module: 'test' })),
+    isLevelEnabled: vi.fn(() => true),
     level: 'info',
   }),
 }));
 
 mockAllWorkflowModules();
 
-mock.module('@archon/core/db/conversations', () => ({
+vi.mock('@archon/core/db/conversations', () => ({
   findConversationByPlatformId: mockFindConversationByPlatformId,
   softDeleteConversation: mockSoftDeleteConversation,
   updateConversationTitle: mockUpdateConversationTitle,
-  listConversations: mock(async () => []),
-  getOrCreateConversation: mock(async () => ({
+  listConversations: vi.fn(async () => []),
+  getOrCreateConversation: vi.fn(async () => ({
     id: 'internal-uuid-123',
     platform_conversation_id: 'web-test-abc',
     title: null,
@@ -76,18 +76,18 @@ mock.module('@archon/core/db/conversations', () => ({
   })),
 }));
 
-mock.module('@archon/core/db/isolation-environments', () => ({}));
-mock.module('@archon/core/db/workflows', () => ({}));
-mock.module('@archon/core/db/workflow-events', () => ({}));
-const mockAddMessage = mock(async (_convId: string, _role: string, _content: string) => ({
+vi.mock('@archon/core/db/isolation-environments', () => ({}));
+vi.mock('@archon/core/db/workflows', () => ({}));
+vi.mock('@archon/core/db/workflow-events', () => ({}));
+const mockAddMessage = vi.fn(async (_convId: string, _role: string, _content: string) => ({
   id: 'msg-uuid-1',
 }));
-mock.module('@archon/core/db/messages', () => ({
+vi.mock('@archon/core/db/messages', () => ({
   addMessage: mockAddMessage,
 }));
-mock.module('@archon/core/db/codebases', () => ({
-  listCodebases: mock(async () => [{ default_cwd: '/tmp/project' }]),
-  getCodebase: mock(async () => null),
+vi.mock('@archon/core/db/codebases', () => ({
+  listCodebases: vi.fn(async () => [{ default_cwd: '/tmp/project' }]),
+  getCodebase: vi.fn(async () => null),
 }));
 
 import { registerApiRoutes } from './api';
@@ -285,7 +285,7 @@ describe('PATCH /api/conversations/:id', () => {
 
 describe('POST /api/conversations', () => {
   const mockWebAdapter = {
-    setConversationDbId: mock((_platformId: string, _dbId: string) => {}),
+    setConversationDbId: vi.fn((_platformId: string, _dbId: string) => {}),
   } as unknown as WebAdapter;
 
   test('creates conversation and returns auto-generated conversationId', async () => {
@@ -332,16 +332,16 @@ describe('POST /api/conversations', () => {
 
 describe('POST /api/conversations with message (atomic create+send)', () => {
   const mockLockManager = {
-    acquireLock: mock(async (_convId: string, fn: () => Promise<void>) => {
+    acquireLock: vi.fn(async (_convId: string, fn: () => Promise<void>) => {
       await fn();
       return { status: 'started' as const };
     }),
   } as unknown as ConversationLockManager;
 
   const mockWebAdapter = {
-    setConversationDbId: mock((_platformId: string, _dbId: string) => {}),
-    emitLockEvent: mock((_convId: string, _locked: boolean) => {}),
-    emitSSE: mock(async (_convId: string, _data: string) => {}),
+    setConversationDbId: vi.fn((_platformId: string, _dbId: string) => {}),
+    emitLockEvent: vi.fn((_convId: string, _locked: boolean) => {}),
+    emitSSE: vi.fn(async (_convId: string, _data: string) => {}),
   } as unknown as WebAdapter;
 
   test('creates conversation and dispatches message atomically', async () => {
@@ -408,7 +408,7 @@ describe('POST /api/conversations with message (atomic create+send)', () => {
 
   test('still works without message (backward compatible)', async () => {
     const simpleWebAdapter = {
-      setConversationDbId: mock((_platformId: string, _dbId: string) => {}),
+      setConversationDbId: vi.fn((_platformId: string, _dbId: string) => {}),
     } as unknown as WebAdapter;
 
     const app = new OpenAPIHono({ defaultHook: validationErrorHook });

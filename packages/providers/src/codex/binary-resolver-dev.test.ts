@@ -2,13 +2,13 @@
  * Tests for the Codex binary resolver in dev mode (BUNDLED_IS_BINARY=false).
  * Separate file because binary-mode tests mock BUNDLED_IS_BINARY=true.
  */
-import { describe, test, expect, mock } from 'bun:test';
+import { vi, describe, test, expect } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => createMockLogger()),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => createMockLogger()),
   BUNDLED_IS_BINARY: false,
-  getArchonHome: mock(() => '/tmp/test-archon-home'),
+  getArchonHome: vi.fn(() => '/tmp/test-archon-home'),
 }));
 
 import { resolveCodexBinaryPath } from './binary-resolver';

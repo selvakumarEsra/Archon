@@ -1,14 +1,14 @@
 /**
  * Unit tests for command handler
  *
- * Note: We avoid using mock.module() for internal modules (utils/git, utils/path-validation)
+ * Note: We avoid using vi.mock() for internal modules (utils/git, utils/path-validation)
  * that have their own test files. Mocking internal modules causes test isolation issues
- * since Bun's mock.module() persists globally across test files.
+ * since Bun's vi.mock() persists globally across test files.
  *
  * Instead, we use spyOn for internal modules, which allows spying on specific functions
  * without replacing the entire module in the global cache.
  */
-import { describe, test, expect, mock, beforeEach, afterAll, spyOn, type Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterAll, type Mock } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 import { makeTestWorkflowWithSource } from '@archon/workflows/test-utils';
 import { Conversation } from '../types';
@@ -19,28 +19,28 @@ import * as pathValidation from '../utils/path-validation';
 import * as workflowDiscovery from '@archon/workflows/workflow-discovery';
 
 // Create mock functions for database modules (safe to mock - no standalone tests)
-const mockUpdateConversation = mock(() => Promise.resolve());
-const mockGetCodebase = mock(() => Promise.resolve(null));
-const mockFindCodebaseByDefaultCwd = mock(() => Promise.resolve(null));
-const mockCreateCodebase = mock(() => Promise.resolve(null));
-const mockGetCodebaseCommands = mock(() => Promise.resolve({}));
-const mockUpdateCodebaseCommands = mock(() => Promise.resolve());
-const mockDeleteCodebase = mock(() => Promise.resolve());
-const mockListCodebases = mock(() => Promise.resolve([]));
-const mockGetActiveSession = mock(() => Promise.resolve(null));
-const mockDeactivateSession = mock(() => Promise.resolve());
+const mockUpdateConversation = vi.fn(() => Promise.resolve());
+const mockGetCodebase = vi.fn(() => Promise.resolve(null));
+const mockFindCodebaseByDefaultCwd = vi.fn(() => Promise.resolve(null));
+const mockCreateCodebase = vi.fn(() => Promise.resolve(null));
+const mockGetCodebaseCommands = vi.fn(() => Promise.resolve({}));
+const mockUpdateCodebaseCommands = vi.fn(() => Promise.resolve());
+const mockDeleteCodebase = vi.fn(() => Promise.resolve());
+const mockListCodebases = vi.fn(() => Promise.resolve([]));
+const mockGetActiveSession = vi.fn(() => Promise.resolve(null));
+const mockDeactivateSession = vi.fn(() => Promise.resolve());
 
 // Workflow database mocks
-const mockGetActiveWorkflowRun = mock(() => Promise.resolve(null));
-const mockCancelWorkflowRun = mock(() => Promise.resolve());
-const mockListWorkflowRuns = mock(() => Promise.resolve([]));
-const mockGetWorkflowRun = mock(() => Promise.resolve(null));
-const mockResumeWorkflowRun = mock(() => Promise.resolve({ id: 'run-id', status: 'running' }));
-const mockFailWorkflowRun = mock(() => Promise.resolve());
-const mockUpdateWorkflowRun = mock(() => Promise.resolve());
+const mockGetActiveWorkflowRun = vi.fn(() => Promise.resolve(null));
+const mockCancelWorkflowRun = vi.fn(() => Promise.resolve());
+const mockListWorkflowRuns = vi.fn(() => Promise.resolve([]));
+const mockGetWorkflowRun = vi.fn(() => Promise.resolve(null));
+const mockResumeWorkflowRun = vi.fn(() => Promise.resolve({ id: 'run-id', status: 'running' }));
+const mockFailWorkflowRun = vi.fn(() => Promise.resolve());
+const mockUpdateWorkflowRun = vi.fn(() => Promise.resolve());
 
 // Workflow events database mocks
-const mockCreateWorkflowEvent = mock(() => Promise.resolve());
+const mockCreateWorkflowEvent = vi.fn(() => Promise.resolve());
 
 // Spies for internal modules (use spyOn instead of mock.module to avoid global pollution)
 let spyIsPathWithinWorkspace: ReturnType<typeof spyOn>;
@@ -63,11 +63,11 @@ let spyFsRm: ReturnType<typeof spyOn>;
 let spyDiscoverWorkflows: ReturnType<typeof spyOn>;
 
 // Mock database modules (safe - these don't have standalone tests that would be affected)
-mock.module('../db/conversations', () => ({
+vi.mock('../db/conversations', () => ({
   updateConversation: mockUpdateConversation,
 }));
 
-mock.module('../db/codebases', () => ({
+vi.mock('../db/codebases', () => ({
   getCodebase: mockGetCodebase,
   findCodebaseByDefaultCwd: mockFindCodebaseByDefaultCwd,
   createCodebase: mockCreateCodebase,
@@ -77,12 +77,12 @@ mock.module('../db/codebases', () => ({
   listCodebases: mockListCodebases,
 }));
 
-mock.module('../db/sessions', () => ({
+vi.mock('../db/sessions', () => ({
   getActiveSession: mockGetActiveSession,
   deactivateSession: mockDeactivateSession,
 }));
 
-mock.module('../db/workflows', () => ({
+vi.mock('../db/workflows', () => ({
   getActiveWorkflowRun: mockGetActiveWorkflowRun,
   cancelWorkflowRun: mockCancelWorkflowRun,
   listWorkflowRuns: mockListWorkflowRuns,
@@ -92,7 +92,7 @@ mock.module('../db/workflows', () => ({
   updateWorkflowRun: mockUpdateWorkflowRun,
 }));
 
-mock.module('../db/workflow-events', () => ({
+vi.mock('../db/workflow-events', () => ({
   createWorkflowEvent: mockCreateWorkflowEvent,
 }));
 
@@ -100,15 +100,15 @@ mock.module('../db/workflow-events', () => ({
 // operation (resetWorkflowNodeSessions) without touching a database. Safe from
 // mock.module pollution because command-handler.test.ts runs as its own isolated
 // `bun test` invocation (see packages/core/package.json).
-const mockDeleteWorkflowNodeSessions = mock(() => Promise.resolve({ deleted: 0 }));
-mock.module('../db/workflow-node-sessions', () => ({
+const mockDeleteWorkflowNodeSessions = vi.fn(() => Promise.resolve({ deleted: 0 }));
+vi.mock('../db/workflow-node-sessions', () => ({
   deleteWorkflowNodeSessions: mockDeleteWorkflowNodeSessions,
-  getWorkflowNodeSession: mock(() => Promise.resolve(null)),
-  upsertWorkflowNodeSession: mock(() => Promise.resolve()),
+  getWorkflowNodeSession: vi.fn(() => Promise.resolve(null)),
+  upsertWorkflowNodeSession: vi.fn(() => Promise.resolve()),
 }));
 
 // Mock isolation-environments database
-const mockIsolationEnvDbCreate = mock(() =>
+const mockIsolationEnvDbCreate = vi.fn(() =>
   Promise.resolve({
     id: 'env-uuid-123',
     codebase_id: 'codebase-123',
@@ -122,23 +122,23 @@ const mockIsolationEnvDbCreate = mock(() =>
     created_by_platform: 'test',
   })
 );
-const mockIsolationEnvDbGet = mock(() => Promise.resolve(null));
-const mockIsolationEnvDbUpdate = mock(() => Promise.resolve());
+const mockIsolationEnvDbGet = vi.fn(() => Promise.resolve(null));
+const mockIsolationEnvDbUpdate = vi.fn(() => Promise.resolve());
 
-const mockCountActiveByCodebase = mock(() => Promise.resolve(0));
-mock.module('../db/isolation-environments', () => ({
+const mockCountActiveByCodebase = vi.fn(() => Promise.resolve(0));
+vi.mock('../db/isolation-environments', () => ({
   create: mockIsolationEnvDbCreate,
   getById: mockIsolationEnvDbGet,
-  getByWorkingPath: mock(() => Promise.resolve(null)),
+  getByWorkingPath: vi.fn(() => Promise.resolve(null)),
   updateStatus: mockIsolationEnvDbUpdate,
-  markDestroyed: mock(() => Promise.resolve()),
-  getActiveByCodebase: mock(() => Promise.resolve([])),
-  getActiveEnvironments: mock(() => Promise.resolve([])),
+  markDestroyed: vi.fn(() => Promise.resolve()),
+  getActiveByCodebase: vi.fn(() => Promise.resolve([])),
+  getActiveEnvironments: vi.fn(() => Promise.resolve([])),
   countActiveByCodebase: mockCountActiveByCodebase,
 }));
 
 // Mock isolation provider
-const mockIsolationCreate = mock(() =>
+const mockIsolationCreate = vi.fn(() =>
   Promise.resolve({
     id: '/workspace/my-repo/worktrees/task-feat-auth',
     provider: 'worktree',
@@ -149,72 +149,72 @@ const mockIsolationCreate = mock(() =>
     metadata: {},
   })
 );
-const mockIsolationDestroy = mock(() => Promise.resolve());
+const mockIsolationDestroy = vi.fn(() => Promise.resolve());
 
-mock.module('../isolation', () => ({
+vi.mock('../isolation', () => ({
   getIsolationProvider: () => ({
     providerType: 'worktree',
     create: mockIsolationCreate,
     destroy: mockIsolationDestroy,
-    get: mock(() => Promise.resolve(null)),
-    list: mock(() => Promise.resolve([])),
-    adopt: mock(() => Promise.resolve(null)),
-    healthCheck: mock(() => Promise.resolve(true)),
+    get: vi.fn(() => Promise.resolve(null)),
+    list: vi.fn(() => Promise.resolve([])),
+    adopt: vi.fn(() => Promise.resolve(null)),
+    healthCheck: vi.fn(() => Promise.resolve(true)),
   }),
 }));
-mock.module('@archon/isolation', () => ({
+vi.mock('@archon/isolation', () => ({
   getIsolationProvider: () => ({
     providerType: 'worktree',
     create: mockIsolationCreate,
     destroy: mockIsolationDestroy,
-    get: mock(() => Promise.resolve(null)),
-    list: mock(() => Promise.resolve([])),
-    adopt: mock(() => Promise.resolve(null)),
-    healthCheck: mock(() => Promise.resolve(true)),
+    get: vi.fn(() => Promise.resolve(null)),
+    list: vi.fn(() => Promise.resolve([])),
+    adopt: vi.fn(() => Promise.resolve(null)),
+    healthCheck: vi.fn(() => Promise.resolve(true)),
   }),
 }));
 
 // Mock cleanup service
-const mockCleanupMergedWorktrees = mock(() =>
+const mockCleanupMergedWorktrees = vi.fn(() =>
   Promise.resolve({
     removed: [] as string[],
     skipped: [] as { branchName: string; reason: string }[],
   })
 );
-const mockCleanupStaleWorktrees = mock(() =>
+const mockCleanupStaleWorktrees = vi.fn(() =>
   Promise.resolve({
     removed: [] as string[],
     skipped: [] as { branchName: string; reason: string }[],
   })
 );
-mock.module('../services/cleanup-service', () => ({
+vi.mock('../services/cleanup-service', () => ({
   cleanupMergedWorktrees: mockCleanupMergedWorktrees,
   cleanupStaleWorktrees: mockCleanupStaleWorktrees,
-  getWorktreeStatusBreakdown: mock(() =>
+  getWorktreeStatusBreakdown: vi.fn(() =>
     Promise.resolve({ total: 0, active: 0, merged: 0, stale: 0 })
   ),
 }));
 
-// Note: We removed mock.module('child_process') because:
+// Note: We removed vi.mock('child_process') because:
 // 1. We already spy on gitUtils.execFileAsync which covers git operations
-// 2. mock.module('child_process') pollutes other test files that use child_process
+// 2. vi.mock('child_process') pollutes other test files that use child_process
 //
 // We also use spyOn for fs/promises and internal modules to avoid polluting
 // other test files (like git.test.ts)
 
 // Mock logger to suppress noisy output during tests
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonWorkspacesPath: mock(() => '/home/test/.archon/workspaces'),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands']),
-  expandTilde: mock((p: string) => p.replace(/^~/, '/home/test')),
-  ensureProjectStructure: mock(() => Promise.resolve()),
-  getProjectSourcePath: mock(
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonWorkspacesPath: vi.fn(() => '/home/test/.archon/workspaces'),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands']),
+  expandTilde: vi.fn((p: string) => p.replace(/^~/, '/home/test')),
+  ensureProjectStructure: vi.fn(() => Promise.resolve()),
+  getProjectSourcePath: vi.fn(
     (owner: string, repo: string) => `/home/test/.archon/workspaces/${owner}/${repo}/source`
   ),
-  createProjectSourceSymlink: mock(() => Promise.resolve()),
-  parseOwnerRepo: mock((name: string) => {
+  createProjectSourceSymlink: vi.fn(() => Promise.resolve()),
+  parseOwnerRepo: vi.fn((name: string) => {
     const parts = name.split('/');
     return parts.length === 2 ? { owner: parts[0], repo: parts[1] } : null;
   }),
@@ -260,35 +260,41 @@ function clearAllMocks(): void {
 // Setup spies for internal modules
 function setupSpies(): void {
   // Path validation spy
-  spyIsPathWithinWorkspace = spyOn(pathValidation, 'isPathWithinWorkspace').mockReturnValue(true);
+  spyIsPathWithinWorkspace = vi
+    .spyOn(pathValidation, 'isPathWithinWorkspace')
+    .mockReturnValue(true);
 
   // Git utility spies
-  spyExecFileAsync = spyOn(gitUtils, 'execFileAsync').mockResolvedValue({ stdout: '', stderr: '' });
-  spyWorktreeExists = spyOn(gitUtils, 'worktreeExists').mockResolvedValue(false);
-  spyListWorktrees = spyOn(gitUtils, 'listWorktrees').mockResolvedValue([]);
-  spyRemoveWorktree = spyOn(gitUtils, 'removeWorktree').mockResolvedValue();
-  spyGetWorktreeBase = spyOn(gitUtils, 'getWorktreeBase').mockImplementation((repoPath: string) =>
-    join(repoPath, 'worktrees')
-  );
-  spyGetCanonicalRepoPath = spyOn(gitUtils, 'getCanonicalRepoPath').mockImplementation(
-    (path: string) => Promise.resolve(path)
-  );
-  spyIsWorktreePath = spyOn(gitUtils, 'isWorktreePath').mockResolvedValue(false);
-  spyFindWorktreeByBranch = spyOn(gitUtils, 'findWorktreeByBranch').mockResolvedValue(null);
-  spyMkdirAsync = spyOn(gitUtils, 'mkdirAsync').mockResolvedValue();
+  spyExecFileAsync = vi
+    .spyOn(gitUtils, 'execFileAsync')
+    .mockResolvedValue({ stdout: '', stderr: '' });
+  spyWorktreeExists = vi.spyOn(gitUtils, 'worktreeExists').mockResolvedValue(false);
+  spyListWorktrees = vi.spyOn(gitUtils, 'listWorktrees').mockResolvedValue([]);
+  spyRemoveWorktree = vi.spyOn(gitUtils, 'removeWorktree').mockResolvedValue();
+  spyGetWorktreeBase = vi
+    .spyOn(gitUtils, 'getWorktreeBase')
+    .mockImplementation((repoPath: string) => join(repoPath, 'worktrees'));
+  spyGetCanonicalRepoPath = vi
+    .spyOn(gitUtils, 'getCanonicalRepoPath')
+    .mockImplementation((path: string) => Promise.resolve(path));
+  spyIsWorktreePath = vi.spyOn(gitUtils, 'isWorktreePath').mockResolvedValue(false);
+  spyFindWorktreeByBranch = vi.spyOn(gitUtils, 'findWorktreeByBranch').mockResolvedValue(null);
+  spyMkdirAsync = vi.spyOn(gitUtils, 'mkdirAsync').mockResolvedValue();
 
   // fs/promises spies (avoid global mock.module pollution)
-  spyFsAccess = spyOn(fsPromises, 'access').mockImplementation(() =>
-    Promise.reject(new Error('ENOENT'))
-  );
-  spyFsReaddir = spyOn(fsPromises, 'readdir').mockImplementation(() => Promise.resolve([]));
-  spyFsRm = spyOn(fsPromises, 'rm').mockImplementation(() => Promise.resolve());
+  spyFsAccess = vi
+    .spyOn(fsPromises, 'access')
+    .mockImplementation(() => Promise.reject(new Error('ENOENT')));
+  spyFsReaddir = vi.spyOn(fsPromises, 'readdir').mockImplementation(() => Promise.resolve([]));
+  spyFsRm = vi.spyOn(fsPromises, 'rm').mockImplementation(() => Promise.resolve());
 
   // Workflow spies
-  spyDiscoverWorkflows = spyOn(workflowDiscovery, 'discoverWorkflowsWithConfig').mockResolvedValue({
-    workflows: [],
-    errors: [],
-  });
+  spyDiscoverWorkflows = vi
+    .spyOn(workflowDiscovery, 'discoverWorkflowsWithConfig')
+    .mockResolvedValue({
+      workflows: [],
+      errors: [],
+    });
 }
 
 // Restore all spies

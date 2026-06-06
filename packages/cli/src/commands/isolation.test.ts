@@ -1,52 +1,52 @@
 /**
  * Tests for isolation complete command
  */
-import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { isolationCompleteCommand, isolationCleanupMergedCommand } from './isolation';
 
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(() => mockLogger),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(() => mockLogger),
 };
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
-const mockFindActiveByBranchName = mock(() => Promise.resolve(null));
+const mockFindActiveByBranchName = vi.fn(() => Promise.resolve(null));
 
-mock.module('@archon/core/db/isolation-environments', () => ({
+vi.mock('@archon/core/db/isolation-environments', () => ({
   findActiveByBranchName: mockFindActiveByBranchName,
-  findActiveByWorkflow: mock(() => Promise.resolve(null)),
-  listAllActiveWithCodebase: mock(() => Promise.resolve([])),
-  listByCodebaseWithAge: mock(() => Promise.resolve([])),
-  findStaleEnvironments: mock(() => Promise.resolve([])),
-  create: mock(() => Promise.resolve({ id: 'iso-123' })),
-  updateStatus: mock(() => Promise.resolve()),
+  findActiveByWorkflow: vi.fn(() => Promise.resolve(null)),
+  listAllActiveWithCodebase: vi.fn(() => Promise.resolve([])),
+  listByCodebaseWithAge: vi.fn(() => Promise.resolve([])),
+  findStaleEnvironments: vi.fn(() => Promise.resolve([])),
+  create: vi.fn(() => Promise.resolve({ id: 'iso-123' })),
+  updateStatus: vi.fn(() => Promise.resolve()),
 }));
 
-const mockGetActiveWorkflowRunByPath = mock(() => Promise.resolve(null));
+const mockGetActiveWorkflowRunByPath = vi.fn(() => Promise.resolve(null));
 
-mock.module('@archon/core/db/workflows', () => ({
+vi.mock('@archon/core/db/workflows', () => ({
   getActiveWorkflowRunByPath: mockGetActiveWorkflowRunByPath,
 }));
 
-const mockRemoveEnvironment = mock(() =>
+const mockRemoveEnvironment = vi.fn(() =>
   Promise.resolve({ worktreeRemoved: true, branchDeleted: true, warnings: [] })
 );
-const mockCleanupMergedWorktrees = mock(() => Promise.resolve({ removed: [], skipped: [] }));
+const mockCleanupMergedWorktrees = vi.fn(() => Promise.resolve({ removed: [], skipped: [] }));
 
-mock.module('@archon/core/services/cleanup-service', () => ({
+vi.mock('@archon/core/services/cleanup-service', () => ({
   removeEnvironment: mockRemoveEnvironment,
   cleanupMergedWorktrees: mockCleanupMergedWorktrees,
 }));
 
-const mockListEnvironments = mock(() =>
+const mockListEnvironments = vi.fn(() =>
   Promise.resolve({
     codebases: [
       {
@@ -60,34 +60,34 @@ const mockListEnvironments = mock(() =>
     ghostsReconciled: 0,
   })
 );
-const mockCleanupMergedEnvironments = mock(() => Promise.resolve({ removed: [], skipped: [] }));
+const mockCleanupMergedEnvironments = vi.fn(() => Promise.resolve({ removed: [], skipped: [] }));
 
-mock.module('@archon/core/operations/isolation-operations', () => ({
+vi.mock('@archon/core/operations/isolation-operations', () => ({
   listEnvironments: mockListEnvironments,
   cleanupMergedEnvironments: mockCleanupMergedEnvironments,
 }));
 
-const mockHasUncommittedChanges = mock(() => Promise.resolve(false));
+const mockHasUncommittedChanges = vi.fn(() => Promise.resolve(false));
 // Default: gh returns empty PR array, git log returns empty string (no commits to report)
-const mockExecFileAsync = mock((cmd: string) =>
+const mockExecFileAsync = vi.fn((cmd: string) =>
   Promise.resolve({ stdout: cmd === 'gh' ? '[]' : '', stderr: '' })
 );
 
-const mockGetDefaultBranch = mock(() => Promise.resolve('main'));
+const mockGetDefaultBranch = vi.fn(() => Promise.resolve('main'));
 
-mock.module('@archon/git', () => ({
+vi.mock('@archon/git', () => ({
   hasUncommittedChanges: mockHasUncommittedChanges,
   execFileAsync: mockExecFileAsync,
-  toWorktreePath: mock((p: string) => p),
-  toRepoPath: mock((p: string) => p),
-  toBranchName: mock((b: string) => b),
-  worktreeExists: mock(() => Promise.resolve(true)),
+  toWorktreePath: vi.fn((p: string) => p),
+  toRepoPath: vi.fn((p: string) => p),
+  toBranchName: vi.fn((b: string) => b),
+  worktreeExists: vi.fn(() => Promise.resolve(true)),
   getDefaultBranch: mockGetDefaultBranch,
 }));
 
-mock.module('@archon/isolation', () => ({
-  getIsolationProvider: mock(() => ({
-    destroy: mock(() => Promise.resolve({ warnings: [] })),
+vi.mock('@archon/isolation', () => ({
+  getIsolationProvider: vi.fn(() => ({
+    destroy: vi.fn(() => Promise.resolve({ warnings: [] })),
   })),
 }));
 
@@ -112,9 +112,9 @@ describe('isolationCompleteCommand', () => {
   let consoleWarnSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     mockFindActiveByBranchName.mockReset();
     mockRemoveEnvironment.mockReset();
     mockHasUncommittedChanges.mockReset();
@@ -452,8 +452,8 @@ describe('isolationCleanupMergedCommand', () => {
   let consoleErrorSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockCleanupMergedEnvironments.mockReset();
     mockCleanupMergedEnvironments.mockResolvedValue({ removed: [], skipped: [] });
   });

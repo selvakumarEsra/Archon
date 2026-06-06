@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, spyOn } from 'bun:test';
+import { vi, describe, test, expect } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import type { ConversationLockManager } from '@archon/core';
 import type { WebAdapter } from '../adapters/web';
@@ -13,7 +13,7 @@ function createTestApp(): OpenAPIHono {
   return new OpenAPIHono({ defaultHook: validationErrorHook });
 }
 
-const mockDiscoverWorkflows = mock(async (_cwd: string | null) => ({
+const mockDiscoverWorkflows = vi.fn(async (_cwd: string | null) => ({
   workflows: [makeTestWorkflowWithSource({ name: 'deploy', description: 'Deploy app' }, 'bundled')],
   errors: [
     { filename: '/tmp/.archon/workflows/bad.md', error: 'invalid', errorType: 'parse_error' },
@@ -21,48 +21,48 @@ const mockDiscoverWorkflows = mock(async (_cwd: string | null) => ({
 }));
 
 // Default: returns a valid workflow. Use mockReturnValueOnce in tests that need a parse failure.
-const mockParseWorkflow = mock((_content: string, _filename: string) => ({
+const mockParseWorkflow = vi.fn((_content: string, _filename: string) => ({
   workflow: makeTestWorkflow({ name: 'test', description: 'Test workflow' }),
   error: null,
 }));
 
-mock.module('@archon/core', () => ({
-  handleMessage: mock(async () => {}),
+vi.mock('@archon/core', () => ({
+  handleMessage: vi.fn(async () => {}),
   getDatabaseType: () => 'sqlite',
-  loadConfig: mock(async () => ({})),
-  getWorkflowFolderSearchPaths: mock(() => ['.archon/workflows']),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands', '.archon/commands/defaults']),
-  getDefaultCommandsPath: mock(() => '/tmp/.archon-test-nonexistent/commands/defaults'),
-  getDefaultWorkflowsPath: mock(() => '/tmp/.archon-test-nonexistent/workflows/defaults'),
-  cloneRepository: mock(async () => {}),
-  registerRepository: mock(async () => ({ success: true })),
-  removeWorktree: mock(async () => ({ success: true })),
+  loadConfig: vi.fn(async () => ({})),
+  getWorkflowFolderSearchPaths: vi.fn(() => ['.archon/workflows']),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands', '.archon/commands/defaults']),
+  getDefaultCommandsPath: vi.fn(() => '/tmp/.archon-test-nonexistent/commands/defaults'),
+  getDefaultWorkflowsPath: vi.fn(() => '/tmp/.archon-test-nonexistent/workflows/defaults'),
+  cloneRepository: vi.fn(async () => {}),
+  registerRepository: vi.fn(async () => ({ success: true })),
+  removeWorktree: vi.fn(async () => ({ success: true })),
   ConversationNotFoundError: class extends Error {},
   getArchonWorkspacesPath: () => '/tmp/.archon/workspaces',
   createLogger: () => ({
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
-    child: mock(function (this: unknown) {
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
+    child: vi.fn(function (this: unknown) {
       return this;
     }),
-    bindings: mock(() => ({ module: 'test' })),
-    isLevelEnabled: mock(() => true),
+    bindings: vi.fn(() => ({ module: 'test' })),
+    isLevelEnabled: vi.fn(() => true),
     level: 'info',
   }),
 }));
 
-mock.module('@archon/workflows/workflow-discovery', () => ({
+vi.mock('@archon/workflows/workflow-discovery', () => ({
   discoverWorkflowsWithConfig: mockDiscoverWorkflows,
 }));
-mock.module('@archon/workflows/loader', () => ({
+vi.mock('@archon/workflows/loader', () => ({
   parseWorkflow: mockParseWorkflow,
 }));
-mock.module('@archon/workflows/command-validation', () => ({
-  isValidCommandName: mock(
+vi.mock('@archon/workflows/command-validation', () => ({
+  isValidCommandName: vi.fn(
     (name: string) =>
       !name.includes('/') &&
       !name.includes('\\') &&
@@ -71,14 +71,14 @@ mock.module('@archon/workflows/command-validation', () => ({
       !name.startsWith('.')
   ),
 }));
-mock.module('@archon/workflows/defaults', () => ({
+vi.mock('@archon/workflows/defaults', () => ({
   BUNDLED_WORKFLOWS: {
     'archon-assist': 'name: archon-assist\ndescription: Archon Assist\nnodes: []',
   },
   BUNDLED_COMMANDS: {
     'archon-assist': '# archon-assist command',
   },
-  isBinaryBuild: mock(() => false),
+  isBinaryBuild: vi.fn(() => false),
 }));
 
 // Note: @archon/core/defaults/bundled-defaults and @archon/core/utils/commands are NOT mocked.
@@ -86,14 +86,14 @@ mock.module('@archon/workflows/defaults', () => ({
 // the filesystem paths used by the routes point to non-existent directories, so access/readFile/unlink
 // calls naturally fail with ENOENT without needing to mock fs/promises (which would leak globally).
 
-mock.module('@archon/core/db/conversations', () => ({}));
-mock.module('@archon/core/db/isolation-environments', () => ({}));
-mock.module('@archon/core/db/workflows', () => ({}));
-mock.module('@archon/core/db/workflow-events', () => ({}));
-mock.module('@archon/core/db/messages', () => ({}));
+vi.mock('@archon/core/db/conversations', () => ({}));
+vi.mock('@archon/core/db/isolation-environments', () => ({}));
+vi.mock('@archon/core/db/workflows', () => ({}));
+vi.mock('@archon/core/db/workflow-events', () => ({}));
+vi.mock('@archon/core/db/messages', () => ({}));
 
-const mockListCodebases = mock(async () => [{ default_cwd: '/tmp/project' }]);
-mock.module('@archon/core/db/codebases', () => ({
+const mockListCodebases = vi.fn(async () => [{ default_cwd: '/tmp/project' }]);
+vi.mock('@archon/core/db/codebases', () => ({
   listCodebases: mockListCodebases,
 }));
 
@@ -368,7 +368,7 @@ describe('GET /api/workflows/:name', () => {
     // hit succeeds. `parseWorkflow` is globally mocked, so asserting on
     // `body.source` alone can't catch a regression that opens both files.
     const fsPromises = await import('fs/promises');
-    const readFileSpy = spyOn(fsPromises, 'readFile');
+    const readFileSpy = vi.spyOn(fsPromises, 'readFile');
 
     const prevArchonHome = process.env.ARCHON_HOME;
     process.env.ARCHON_HOME = tmpHome;

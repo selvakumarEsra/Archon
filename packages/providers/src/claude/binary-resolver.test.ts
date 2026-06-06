@@ -4,7 +4,7 @@
  * Must run in its own bun test invocation because it mocks @archon/paths
  * with BUNDLED_IS_BINARY=true, which conflicts with other test files.
  */
-import { describe, test, expect, mock, beforeEach, afterAll, spyOn } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterAll } from 'vitest';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger } from '../test/mocks/logger';
@@ -12,8 +12,8 @@ import { createMockLogger } from '../test/mocks/logger';
 const mockLogger = createMockLogger();
 
 // Mock @archon/paths with BUNDLED_IS_BINARY = true (binary mode)
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
   BUNDLED_IS_BINARY: true,
 }));
 
@@ -42,7 +42,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
 
   test('uses CLAUDE_BIN_PATH env var when set and file exists', async () => {
     process.env.CLAUDE_BIN_PATH = '/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js';
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('file');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('file');
 
     const result = await resolver.resolveClaudeBinaryPath();
     expect(result).toBe('/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js');
@@ -50,7 +50,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
 
   test('throws when CLAUDE_BIN_PATH is set but file does not exist', async () => {
     process.env.CLAUDE_BIN_PATH = '/nonexistent/cli.js';
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('missing');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('missing');
 
     await expect(resolver.resolveClaudeBinaryPath()).rejects.toThrow(
       'CLAUDE_BIN_PATH is set to "/nonexistent/cli.js" but the file does not exist'
@@ -58,14 +58,14 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
   });
 
   test('uses config claudeBinaryPath when file exists', async () => {
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('file');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('file');
 
     const result = await resolver.resolveClaudeBinaryPath('/custom/claude/cli.js');
     expect(result).toBe('/custom/claude/cli.js');
   });
 
   test('throws when config claudeBinaryPath file does not exist', async () => {
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('missing');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('missing');
 
     await expect(resolver.resolveClaudeBinaryPath('/nonexistent/cli.js')).rejects.toThrow(
       'assistants.claude.claudeBinaryPath is set to "/nonexistent/cli.js" but the file does not exist'
@@ -74,7 +74,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
 
   test('env var takes precedence over config path', async () => {
     process.env.CLAUDE_BIN_PATH = '/env/cli.js';
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('file');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('file');
 
     const result = await resolver.resolveClaudeBinaryPath('/config/cli.js');
     expect(result).toBe('/env/cli.js');
@@ -84,9 +84,9 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
     // Mirror the implementation: use os.homedir() + node:path.join so the
     // expected path matches the platform's actual home dir and separator.
     const expected = join(homedir(), '.local', 'bin', CLAUDE_BINARY_NAME);
-    pathKindSpy = spyOn(resolver, 'pathKind').mockImplementation((path: string) =>
-      path === expected ? 'file' : 'missing'
-    );
+    pathKindSpy = vi
+      .spyOn(resolver, 'pathKind')
+      .mockImplementation((path: string) => (path === expected ? 'file' : 'missing'));
 
     const result = await resolver.resolveClaudeBinaryPath();
     expect(result).toBe(expected);
@@ -101,7 +101,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
     // A directory at ~/.local/bin/claude indicates a broken install; the
     // resolver must NOT silently hand it to the SDK (which would ENOENT).
     // Expansion is deliberately limited to user-configured paths.
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('directory');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('directory');
 
     const promise = resolver.resolveClaudeBinaryPath();
     await expect(promise).rejects.toThrow('Claude Code not found');
@@ -109,7 +109,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
 
   test('env var takes precedence over autodetect when both would match', async () => {
     process.env.CLAUDE_BIN_PATH = '/custom/env/claude';
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('file');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('file');
 
     const result = await resolver.resolveClaudeBinaryPath();
     expect(result).toBe('/custom/env/claude');
@@ -120,7 +120,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
   });
 
   test('config takes precedence over autodetect when both would match', async () => {
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('file');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('file');
 
     const result = await resolver.resolveClaudeBinaryPath('/custom/config/claude');
     expect(result).toBe('/custom/config/claude');
@@ -131,7 +131,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
   });
 
   test('throws with install instructions when nothing is configured and autodetect misses', async () => {
-    pathKindSpy = spyOn(resolver, 'pathKind').mockReturnValue('missing');
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockReturnValue('missing');
 
     const promise = resolver.resolveClaudeBinaryPath();
     await expect(promise).rejects.toThrow('Claude Code not found');
@@ -153,7 +153,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
   test('expands a configured directory to claude/claude.exe when the binary is present (config path)', async () => {
     const dir = '/opt/claude-code-package';
     const expectedFile = join(dir, CLAUDE_BINARY_NAME);
-    pathKindSpy = spyOn(resolver, 'pathKind').mockImplementation((p: string) => {
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockImplementation((p: string) => {
       if (p === dir) return 'directory';
       if (p === expectedFile) return 'file';
       return 'missing';
@@ -171,7 +171,7 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
     const dir = '/opt/claude-code-package';
     const expectedFile = join(dir, CLAUDE_BINARY_NAME);
     process.env.CLAUDE_BIN_PATH = dir;
-    pathKindSpy = spyOn(resolver, 'pathKind').mockImplementation((p: string) => {
+    pathKindSpy = vi.spyOn(resolver, 'pathKind').mockImplementation((p: string) => {
       if (p === dir) return 'directory';
       if (p === expectedFile) return 'file';
       return 'missing';
@@ -187,9 +187,9 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
 
   test('throws a directory-specific error when config path is a directory missing the expected executable', async () => {
     const dir = '/some/empty/dir';
-    pathKindSpy = spyOn(resolver, 'pathKind').mockImplementation((p: string) =>
-      p === dir ? 'directory' : 'missing'
-    );
+    pathKindSpy = vi
+      .spyOn(resolver, 'pathKind')
+      .mockImplementation((p: string) => (p === dir ? 'directory' : 'missing'));
 
     const promise = resolver.resolveClaudeBinaryPath(dir);
     await expect(promise).rejects.toThrow('assistants.claude.claudeBinaryPath');
@@ -200,9 +200,9 @@ describe('resolveClaudeBinaryPath (binary mode)', () => {
   test('throws a directory-specific error when CLAUDE_BIN_PATH is a directory missing the expected executable', async () => {
     const dir = '/some/empty/dir';
     process.env.CLAUDE_BIN_PATH = dir;
-    pathKindSpy = spyOn(resolver, 'pathKind').mockImplementation((p: string) =>
-      p === dir ? 'directory' : 'missing'
-    );
+    pathKindSpy = vi
+      .spyOn(resolver, 'pathKind')
+      .mockImplementation((p: string) => (p === dir ? 'directory' : 'missing'));
 
     const promise = resolver.resolveClaudeBinaryPath();
     await expect(promise).rejects.toThrow('CLAUDE_BIN_PATH');

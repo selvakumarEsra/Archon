@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from 'bun:test';
+import { describe, test, expect, afterEach } from 'vitest';
 import { SqliteAdapter } from './sqlite';
 import { Database } from 'bun:sqlite';
 import { unlinkSync } from 'fs';

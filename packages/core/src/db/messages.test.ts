@@ -1,12 +1,12 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 import type { MessageRow } from './messages';
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
-const mockGetDatabaseType = mock(() => 'postgresql' as const);
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
+const mockGetDatabaseType = vi.fn(() => 'postgresql' as const);
 
 // Mock the connection module before importing the module under test
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: {
     query: mockQuery,
   },
@@ -15,14 +15,14 @@ mock.module('./connection', () => ({
 }));
 
 // Mock @archon/paths to avoid lazy logger initialization issues in tests
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => ({
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => ({
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
   })),
 }));
 

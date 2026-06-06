@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import type { AgentSession, AgentSessionEvent } from '@earendil-works/pi-coding-agent';
 
 import type { MessageChunk } from '../../types';

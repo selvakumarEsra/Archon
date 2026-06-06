@@ -1,7 +1,7 @@
 /**
  * Tests for skill install command
  */
-import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -73,8 +73,8 @@ describe('skillInstallCommand', () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'archon-skill-cmd-test-'));
-    logSpy = spyOn(console, 'log').mockImplementation(() => {});
-    errSpy = spyOn(console, 'error').mockImplementation(() => {});
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

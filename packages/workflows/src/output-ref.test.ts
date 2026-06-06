@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 
 import { declaredFieldsFromSchema, OutputRefError, resolveNodeOutputField } from './output-ref';
 import type { NodeOutput } from './schemas';

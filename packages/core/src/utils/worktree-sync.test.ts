@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn, mock, type Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach, type Mock } from 'vitest';
 import * as git from '@archon/git';
 import * as worktreeCopy from '@archon/isolation';
 import * as configLoader from '../config/config-loader';
@@ -14,14 +14,14 @@ function normPath(p: string): string {
 }
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonHome: mock(() => '/home/test/.archon'),
-  getArchonConfigPath: mock(() => '/home/test/.archon/config.yaml'),
-  getArchonWorkspacesPath: mock(() => '/home/test/.archon/workspaces'),
-  getArchonWorktreesPath: mock(() => '/home/test/.archon/worktrees'),
-  getDefaultCommandsPath: mock(() => '/app/.archon/commands/defaults'),
-  getDefaultWorkflowsPath: mock(() => '/app/.archon/workflows/defaults'),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonHome: vi.fn(() => '/home/test/.archon'),
+  getArchonConfigPath: vi.fn(() => '/home/test/.archon/config.yaml'),
+  getArchonWorkspacesPath: vi.fn(() => '/home/test/.archon/workspaces'),
+  getArchonWorktreesPath: vi.fn(() => '/home/test/.archon/worktrees'),
+  getDefaultCommandsPath: vi.fn(() => '/app/.archon/commands/defaults'),
+  getDefaultWorkflowsPath: vi.fn(() => '/app/.archon/workflows/defaults'),
 }));
 
 import { syncArchonToWorktree } from './worktree-sync';
@@ -36,11 +36,11 @@ describe('syncArchonToWorktree', () => {
   >;
 
   beforeEach(() => {
-    isWorktreePathSpy = spyOn(git, 'isWorktreePath');
-    getCanonicalRepoPathSpy = spyOn(git, 'getCanonicalRepoPath');
-    statSpy = spyOn(fs, 'stat');
-    loadRepoConfigSpy = spyOn(configLoader, 'loadRepoConfig');
-    copyWorktreeFilesSpy = spyOn(worktreeCopy, 'copyWorktreeFiles');
+    isWorktreePathSpy = vi.spyOn(git, 'isWorktreePath');
+    getCanonicalRepoPathSpy = vi.spyOn(git, 'getCanonicalRepoPath');
+    statSpy = vi.spyOn(fs, 'stat');
+    loadRepoConfigSpy = vi.spyOn(configLoader, 'loadRepoConfig');
+    copyWorktreeFilesSpy = vi.spyOn(worktreeCopy, 'copyWorktreeFiles');
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();

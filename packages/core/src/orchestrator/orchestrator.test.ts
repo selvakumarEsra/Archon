@@ -1,4 +1,4 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MockPlatformAdapter } from '../test/mocks/platform';
 import { createMockLogger } from '../test/mocks/logger';
 import { makeTestWorkflow, makeTestWorkflowList } from '@archon/workflows/test-utils';
@@ -9,41 +9,41 @@ import type { WorkflowDefinition } from '@archon/workflows/schemas/workflow';
 // ─── Mock setup (BEFORE importing module under test) ─────────────────────────
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonWorkspacesPath: mock(() => '/home/test/.archon/workspaces'),
-  ensureArchonWorkspacesPath: mock(() => Promise.resolve('/home/test/.archon/workspaces')),
-  getArchonHome: mock(() => '/home/test/.archon'),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonWorkspacesPath: vi.fn(() => '/home/test/.archon/workspaces'),
+  ensureArchonWorkspacesPath: vi.fn(() => Promise.resolve('/home/test/.archon/workspaces')),
+  getArchonHome: vi.fn(() => '/home/test/.archon'),
 }));
 
 // DB mocks
-const mockGetOrCreateConversation = mock(() => Promise.resolve(null));
-const mockGetConversationByPlatformId = mock(() => Promise.resolve(null));
-const mockUpdateConversation = mock(() => Promise.resolve());
-const mockTouchConversation = mock(() => Promise.resolve());
+const mockGetOrCreateConversation = vi.fn(() => Promise.resolve(null));
+const mockGetConversationByPlatformId = vi.fn(() => Promise.resolve(null));
+const mockUpdateConversation = vi.fn(() => Promise.resolve());
+const mockTouchConversation = vi.fn(() => Promise.resolve());
 
-mock.module('../db/conversations', () => ({
+vi.mock('../db/conversations', () => ({
   getOrCreateConversation: mockGetOrCreateConversation,
   getConversationByPlatformId: mockGetConversationByPlatformId,
   updateConversation: mockUpdateConversation,
   touchConversation: mockTouchConversation,
 }));
 
-const mockGetCodebase = mock(() => Promise.resolve(null));
-const mockListCodebases = mock(() => Promise.resolve([]));
-const mockCreateCodebase = mock(() => Promise.resolve({ id: 'new-codebase-id' }));
+const mockGetCodebase = vi.fn(() => Promise.resolve(null));
+const mockListCodebases = vi.fn(() => Promise.resolve([]));
+const mockCreateCodebase = vi.fn(() => Promise.resolve({ id: 'new-codebase-id' }));
 
-mock.module('../db/codebases', () => ({
+vi.mock('../db/codebases', () => ({
   getCodebase: mockGetCodebase,
   listCodebases: mockListCodebases,
   createCodebase: mockCreateCodebase,
 }));
 
-const mockGetActiveSession = mock(() => Promise.resolve(null));
-const mockCreateSession = mock(() => Promise.resolve(null));
-const mockUpdateSession = mock(() => Promise.resolve());
-const mockDeactivateSession = mock(() => Promise.resolve());
-const mockTransitionSession = mock(
+const mockGetActiveSession = vi.fn(() => Promise.resolve(null));
+const mockCreateSession = vi.fn(() => Promise.resolve(null));
+const mockUpdateSession = vi.fn(() => Promise.resolve());
+const mockDeactivateSession = vi.fn(() => Promise.resolve());
+const mockTransitionSession = vi.fn(
   async (conversationId: string, reason: string, data: { ai_assistant_type: string }) => {
     const current = await mockGetActiveSession(conversationId);
     if (current) {
@@ -58,7 +58,7 @@ const mockTransitionSession = mock(
   }
 );
 
-mock.module('../db/sessions', () => ({
+vi.mock('../db/sessions', () => ({
   getActiveSession: mockGetActiveSession,
   createSession: mockCreateSession,
   updateSession: mockUpdateSession,
@@ -67,22 +67,22 @@ mock.module('../db/sessions', () => ({
 }));
 
 // Command handler mock
-const mockHandleCommand = mock(() =>
+const mockHandleCommand = vi.fn(() =>
   Promise.resolve({ message: '', modified: false, success: true })
 );
-const mockParseCommand = mock((message: string) => {
+const mockParseCommand = vi.fn((message: string) => {
   const parts = message.split(/\s+/);
   return { command: parts[0].substring(1), args: parts.slice(1) };
 });
 
-mock.module('../handlers/command-handler', () => ({
+vi.mock('../handlers/command-handler', () => ({
   handleCommand: mockHandleCommand,
   parseCommand: mockParseCommand,
 }));
 
 // AI provider mock
-const mockGetAgentProvider = mock(() => null);
-const mockGetProviderCapabilities = mock(() => ({
+const mockGetAgentProvider = vi.fn(() => null);
+const mockGetProviderCapabilities = vi.fn(() => ({
   sessionResume: true,
   mcp: true,
   hooks: true,
@@ -98,20 +98,20 @@ const mockGetProviderCapabilities = mock(() => ({
   nativeTools: true,
 }));
 
-mock.module('@archon/providers', () => ({
+vi.mock('@archon/providers', () => ({
   getAgentProvider: mockGetAgentProvider,
   getProviderCapabilities: mockGetProviderCapabilities,
 }));
 
 // Workflow mocks
-const mockDiscoverWorkflows = mock(() => Promise.resolve({ workflows: [], errors: [] }));
-const mockExecuteWorkflow = mock(() => Promise.resolve());
-const mockFindWorkflow = mock((name: string, workflows: readonly WorkflowDefinition[]) =>
+const mockDiscoverWorkflows = vi.fn(() => Promise.resolve({ workflows: [], errors: [] }));
+const mockExecuteWorkflow = vi.fn(() => Promise.resolve());
+const mockFindWorkflow = vi.fn((name: string, workflows: readonly WorkflowDefinition[]) =>
   workflows.find(w => w.name === name)
 );
 
-mock.module('../workflows/store-adapter', () => ({
-  createWorkflowDeps: mock(() => ({
+vi.mock('../workflows/store-adapter', () => ({
+  createWorkflowDeps: vi.fn(() => ({
     store: {},
     getAgentProvider: () => ({}),
     loadConfig: async () => ({}),
@@ -119,7 +119,7 @@ mock.module('../workflows/store-adapter', () => ({
 }));
 
 // Config mock
-const mockLoadConfig = mock(() =>
+const mockLoadConfig = vi.fn(() =>
   Promise.resolve({
     botName: 'Archon',
     assistant: 'claude',
@@ -132,24 +132,24 @@ const mockLoadConfig = mock(() =>
   })
 );
 
-mock.module('../config/config-loader', () => ({
+vi.mock('../config/config-loader', () => ({
   loadConfig: mockLoadConfig,
 }));
 
 // Worktree sync mock
-const mockSyncArchonToWorktree = mock(() => Promise.resolve(false));
+const mockSyncArchonToWorktree = vi.fn(() => Promise.resolve(false));
 
-mock.module('../utils/worktree-sync', () => ({
+vi.mock('../utils/worktree-sync', () => ({
   syncArchonToWorktree: mockSyncArchonToWorktree,
 }));
 
 // Orchestrator (isolation & dispatch) mocks
-const mockValidateAndResolveIsolation = mock(() =>
+const mockValidateAndResolveIsolation = vi.fn(() =>
   Promise.resolve({ status: 'existing', cwd: '/workspace/project', env: null })
 );
-const mockDispatchBackgroundWorkflow = mock(() => Promise.resolve());
+const mockDispatchBackgroundWorkflow = vi.fn(() => Promise.resolve());
 
-mock.module('./orchestrator', () => ({
+vi.mock('./orchestrator', () => ({
   validateAndResolveIsolation: mockValidateAndResolveIsolation,
   dispatchBackgroundWorkflow: mockDispatchBackgroundWorkflow,
   IsolationBlockedError: class IsolationBlockedError extends Error {
@@ -161,54 +161,54 @@ mock.module('./orchestrator', () => ({
 }));
 
 // Prompt builder mock
-const mockBuildOrchestratorPrompt = mock(() => 'You are the orchestrator agent.');
-const mockBuildProjectScopedPrompt = mock(() => 'You are scoped to project X.');
-const mockBuildOrchestratorSystemAppend = mock(() => 'orchestrator system append');
+const mockBuildOrchestratorPrompt = vi.fn(() => 'You are the orchestrator agent.');
+const mockBuildProjectScopedPrompt = vi.fn(() => 'You are scoped to project X.');
+const mockBuildOrchestratorSystemAppend = vi.fn(() => 'orchestrator system append');
 
-mock.module('./prompt-builder', () => ({
+vi.mock('./prompt-builder', () => ({
   buildOrchestratorPrompt: mockBuildOrchestratorPrompt,
   buildProjectScopedPrompt: mockBuildProjectScopedPrompt,
   buildOrchestratorSystemAppend: mockBuildOrchestratorSystemAppend,
 }));
 
 // Error/tool formatter mocks
-mock.module('../utils/error-formatter', () => ({
-  classifyAndFormatError: mock((err: Error) => `⚠️ Error: ${err.message}`),
+vi.mock('../utils/error-formatter', () => ({
+  classifyAndFormatError: vi.fn((err: Error) => `⚠️ Error: ${err.message}`),
 }));
 
-mock.module('@archon/workflows/workflow-discovery', () => ({
+vi.mock('@archon/workflows/workflow-discovery', () => ({
   discoverWorkflowsWithConfig: mockDiscoverWorkflows,
 }));
-mock.module('@archon/workflows/executor', () => ({
+vi.mock('@archon/workflows/executor', () => ({
   executeWorkflow: mockExecuteWorkflow,
-  hydrateResumableRun: mock(() => Promise.resolve(null)),
+  hydrateResumableRun: vi.fn(() => Promise.resolve(null)),
 }));
-mock.module('@archon/workflows/router', () => ({
+vi.mock('@archon/workflows/router', () => ({
   findWorkflow: mockFindWorkflow,
 }));
-mock.module('@archon/workflows/utils/tool-formatter', () => ({
-  formatToolCall: mock((toolName: string, _toolInput: unknown) => `🔧 ${toolName.toUpperCase()}`),
+vi.mock('@archon/workflows/utils/tool-formatter', () => ({
+  formatToolCall: vi.fn((toolName: string, _toolInput: unknown) => `🔧 ${toolName.toUpperCase()}`),
 }));
 
 // fs mock for existsSync
-const mockExistsSync = mock(() => true);
-mock.module('fs', () => ({
+const mockExistsSync = vi.fn(() => true);
+vi.mock('fs', () => ({
   existsSync: mockExistsSync,
 }));
 
 // Title generator mock
-const mockGenerateAndSetTitle = mock(() => Promise.resolve());
-mock.module('../services/title-generator', () => ({
+const mockGenerateAndSetTitle = vi.fn(() => Promise.resolve());
+vi.mock('../services/title-generator', () => ({
   generateAndSetTitle: mockGenerateAndSetTitle,
 }));
 
 // Workflow DB mock — dispatchOrchestratorWorkflow now consults findResumableRunByParentConversation
 // for all platforms (not just web), so this module must be stubbed even when these tests don't
 // exercise the resume path. The default null return keeps execution on the "fresh run" branch.
-mock.module('../db/workflows', () => ({
-  findResumableRunByParentConversation: mock(() => Promise.resolve(null)),
-  getPausedWorkflowRun: mock(() => Promise.resolve(null)),
-  updateWorkflowRun: mock(() => Promise.resolve()),
+vi.mock('../db/workflows', () => ({
+  findResumableRunByParentConversation: vi.fn(() => Promise.resolve(null)),
+  getPausedWorkflowRun: vi.fn(() => Promise.resolve(null)),
+  updateWorkflowRun: vi.fn(() => Promise.resolve()),
 }));
 
 // ─── Import module under test (AFTER all mocks) ─────────────────────────────
@@ -272,10 +272,10 @@ const testWorkflows = testWorkflowDefs.map(w => ({
 }));
 
 const mockClient = {
-  sendQuery: mock(async function* () {
+  sendQuery: vi.fn(async function* () {
     yield { type: 'result', sessionId: 'session-id' };
   }),
-  getType: mock(() => 'claude'),
+  getType: vi.fn(() => 'claude'),
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -801,7 +801,7 @@ describe('orchestrator-agent handleMessage', () => {
       });
 
       const codexClient = {
-        sendQuery: mock(async function* () {
+        sendQuery: vi.fn(async function* () {
           yield { type: 'result', sessionId: 'codex-session' };
         }),
       };

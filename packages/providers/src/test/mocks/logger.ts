@@ -1,4 +1,4 @@
-import { mock } from 'bun:test';
+import { vi } from 'vitest';
 import type { Logger } from 'pino';
 
 export interface MockLogger extends Logger {
@@ -13,15 +13,15 @@ export interface MockLogger extends Logger {
 
 export function createMockLogger(): MockLogger {
   const logger = {
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
-    child: mock(() => logger),
-    bindings: mock(() => ({ module: 'test' })),
-    isLevelEnabled: mock(() => true),
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
+    child: vi.fn(() => logger),
+    bindings: vi.fn(() => ({ module: 'test' })),
+    isLevelEnabled: vi.fn(() => true),
     level: 'info',
   } as unknown as MockLogger;
   return logger;

@@ -1,18 +1,18 @@
-import { describe, test, expect, mock, beforeEach, spyOn } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Create mock query function
-const mockQuery = mock(async function* () {
+const mockQuery = vi.fn(async function* () {
   // Empty generator by default
 });
 
 // Mock the claude-agent-sdk
-mock.module('@anthropic-ai/claude-agent-sdk', () => ({
+vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
   query: mockQuery,
 }));
 
@@ -82,7 +82,7 @@ describe('ClaudeProvider', () => {
 
   describe('constructor', () => {
     test('throws when running as root (UID 0)', () => {
-      const spy = spyOn(claudeModule, 'getProcessUid').mockReturnValue(0);
+      const spy = vi.spyOn(claudeModule, 'getProcessUid').mockReturnValue(0);
       // IS_SANDBOX=1 bypasses the root check; clear it so the guard can trigger
       const savedSandbox = process.env.IS_SANDBOX;
       delete process.env.IS_SANDBOX;
@@ -97,13 +97,13 @@ describe('ClaudeProvider', () => {
     });
 
     test('does not throw for non-root user', () => {
-      const spy = spyOn(claudeModule, 'getProcessUid').mockReturnValue(1000);
+      const spy = vi.spyOn(claudeModule, 'getProcessUid').mockReturnValue(1000);
       expect(() => new ClaudeProvider()).not.toThrow();
       spy.mockRestore();
     });
 
     test('does not throw when process.getuid is unavailable (Windows)', () => {
-      const spy = spyOn(claudeModule, 'getProcessUid').mockReturnValue(undefined);
+      const spy = vi.spyOn(claudeModule, 'getProcessUid').mockReturnValue(undefined);
       expect(() => new ClaudeProvider()).not.toThrow();
       spy.mockRestore();
     });
@@ -555,9 +555,9 @@ describe('ClaudeProvider', () => {
       // in the test above (executableArgs: undefined). This test exercises the
       // legacy explicit-cli.js path through the real buildBaseClaudeOptions
       // codepath, so a regression in the conditional spread would be caught.
-      const spy = spyOn(binaryResolver, 'resolveClaudeBinaryPath').mockResolvedValue(
-        '/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js'
-      );
+      const spy = vi
+        .spyOn(binaryResolver, 'resolveClaudeBinaryPath')
+        .mockResolvedValue('/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js');
 
       mockQuery.mockImplementation(async function* () {
         // empty

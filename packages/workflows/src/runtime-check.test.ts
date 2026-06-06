@@ -1,39 +1,39 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // Mock @archon/git before importing the module under test
-const mockExecFileAsync = mock(
+const mockExecFileAsync = vi.fn(
   async (_cmd: string, _args: string[]): Promise<{ stdout: string; stderr: string }> => ({
     stdout: '/usr/bin/bun\n',
     stderr: '',
   })
 );
 
-mock.module('@archon/git', () => ({
+vi.mock('@archon/git', () => ({
   execFileAsync: mockExecFileAsync,
 }));
 
 // Mock @archon/paths logger
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => ({
-    fatal: mock(() => undefined),
-    error: mock(() => undefined),
-    warn: mock(() => undefined),
-    info: mock(() => undefined),
-    debug: mock(() => undefined),
-    trace: mock(() => undefined),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => ({
+    fatal: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
+    warn: vi.fn(() => undefined),
+    info: vi.fn(() => undefined),
+    debug: vi.fn(() => undefined),
+    trace: vi.fn(() => undefined),
   })),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands']),
-  getDefaultCommandsPath: mock(() => '/defaults/commands'),
-  findMarkdownFilesRecursive: mock(async () => []),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands']),
+  getDefaultCommandsPath: vi.fn(() => '/defaults/commands'),
+  findMarkdownFilesRecursive: vi.fn(async () => []),
 }));
 
 // Mock defaults and command-validation used by validator
-mock.module('./defaults/bundled-defaults', () => ({
+vi.mock('./defaults/bundled-defaults', () => ({
   BUNDLED_COMMANDS: {},
   isBinaryBuild: () => false,
 }));
 
-mock.module('./command-validation', () => ({
+vi.mock('./command-validation', () => ({
   isValidCommandName: () => true,
 }));
 

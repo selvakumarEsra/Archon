@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach, afterAll, spyOn, mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterAll } from 'vitest';
 import * as fsPromises from 'fs/promises';
 import * as providers from '@archon/providers';
 import * as configLoader from './config-loader';
 import { createMockLogger } from '../test/mocks/logger';
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => mockLogger,
 }));
 
@@ -21,13 +21,13 @@ function enoent(): Error {
 
 beforeEach(() => {
   spyAccess?.mockRestore();
-  spyAccess = spyOn(fsPromises, 'access').mockRejectedValue(enoent());
+  spyAccess = vi.spyOn(fsPromises, 'access').mockRejectedValue(enoent());
 
   spyProviders?.mockRestore();
-  spyProviders = spyOn(providers, 'getRegisteredProviders').mockReturnValue([]);
+  spyProviders = vi.spyOn(providers, 'getRegisteredProviders').mockReturnValue([]);
 
   spyLoadConfig?.mockRestore();
-  spyLoadConfig = spyOn(configLoader, 'loadConfig').mockResolvedValue({
+  spyLoadConfig = vi.spyOn(configLoader, 'loadConfig').mockResolvedValue({
     assistant: 'claude',
   } as Awaited<ReturnType<typeof configLoader.loadConfig>>);
 });

@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { applyOnText } from './chat-message-reducer';
 import type { ChatMessage, ToolCallDisplay } from './types';
 

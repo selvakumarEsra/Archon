@@ -4,34 +4,34 @@
  * Note: Database modules are mocked to prevent self-filtering tests from
  * writing phantom records (e.g., testuser/testrepo) to the real SQLite DB.
  */
-import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock logger to suppress noisy output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands', '.claude/commands']),
-  getProjectSourcePath: mock(
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands', '.claude/commands']),
+  getProjectSourcePath: vi.fn(
     (owner: string, repo: string) => `/tmp/test-workspaces/${owner}/${repo}/source`
   ),
-  ensureProjectStructure: mock(async () => undefined),
+  ensureProjectStructure: vi.fn(async () => undefined),
 }));
 
 // Only mock what's needed for the adapter's direct functionality
-const mockExecFile = mock(
+const mockExecFile = vi.fn(
   (
     _cmd: string,
     _args: string[],
@@ -42,7 +42,7 @@ const mockExecFile = mock(
   }
 );
 
-mock.module('child_process', () => ({
+vi.mock('child_process', () => ({
   execFile: mockExecFile,
 }));
 
@@ -50,38 +50,38 @@ mock.module('child_process', () => ({
 // phantom records (testuser/testrepo) to the real SQLite database.
 // handleWebhook() calls getOrCreateConversation + getOrCreateCodebaseForRepo
 // before hitting unmocked Octokit calls - those DB writes persisted silently.
-const mockGetOrCreateConversation = mock(async () => ({
+const mockGetOrCreateConversation = vi.fn(async () => ({
   id: 'conv-test',
   codebase_id: null,
   cwd: null,
   isolation_env_id: null,
 }));
-const mockUpdateConversation = mock(async () => {});
+const mockUpdateConversation = vi.fn(async () => {});
 
-mock.module('@archon/core/db/conversations', () => ({
+vi.mock('@archon/core/db/conversations', () => ({
   getOrCreateConversation: mockGetOrCreateConversation,
   updateConversation: mockUpdateConversation,
 }));
 
-const mockFindCodebaseByRepoUrl = mock(async () => null);
-const mockCreateCodebase = mock(async () => ({
+const mockFindCodebaseByRepoUrl = vi.fn(async () => null);
+const mockCreateCodebase = vi.fn(async () => ({
   id: 'codebase-test',
   name: 'testuser/testrepo',
   default_cwd: '/tmp/test',
 }));
 
-mock.module('@archon/core/db/codebases', () => ({
+vi.mock('@archon/core/db/codebases', () => ({
   findCodebaseByRepoUrl: mockFindCodebaseByRepoUrl,
   createCodebase: mockCreateCodebase,
-  updateCodebase: mock(async () => {}),
-  getCodebaseCommands: mock(async () => ({})),
-  updateCodebaseCommands: mock(async () => {}),
+  updateCodebase: vi.fn(async () => {}),
+  getCodebaseCommands: vi.fn(async () => ({})),
+  updateCodebaseCommands: vi.fn(async () => {}),
 }));
 
 // Mock the users module so adapter.handleWebhook's user-id resolution can be
 // inspected without hitting the real DB. Captures the (platform, login) args
 // so the comment.user.login ?? sender.login fallback can be asserted.
-const mockFindOrCreateUserByPlatformIdentity = mock(
+const mockFindOrCreateUserByPlatformIdentity = vi.fn(
   async (_platform: string, _platformUserId: string, _displayName?: string) => ({
     id: 'user-test-uuid',
     display_name: 'Test',
@@ -90,22 +90,22 @@ const mockFindOrCreateUserByPlatformIdentity = mock(
     updated_at: new Date(),
   })
 );
-mock.module('@archon/core/db/users', () => ({
+vi.mock('@archon/core/db/users', () => ({
   findOrCreateUserByPlatformIdentity: mockFindOrCreateUserByPlatformIdentity,
 }));
 
 // Mock @archon/git for ensureRepoReady integration tests
-const mockCloneRepository = mock(async () => ({ ok: true, value: undefined }));
-const mockSyncRepository = mock(async () => ({ ok: true, value: undefined }));
-const mockAddSafeDirectory = mock(async () => undefined);
-const mockIsWorktreePath = mock(async () => false);
+const mockCloneRepository = vi.fn(async () => ({ ok: true, value: undefined }));
+const mockSyncRepository = vi.fn(async () => ({ ok: true, value: undefined }));
+const mockAddSafeDirectory = vi.fn(async () => undefined);
+const mockIsWorktreePath = vi.fn(async () => false);
 
 // execFileAsync is used by installCredentialHelper (which runs after a
 // successful App-mode clone). We don't need to assert against it here; it
 // just has to be a no-op rather than `undefined` (which would TypeError).
-const mockExecFileAsync = mock(async () => ({ stdout: '', stderr: '' }));
+const mockExecFileAsync = vi.fn(async () => ({ stdout: '', stderr: '' }));
 
-mock.module('@archon/git', () => ({
+vi.mock('@archon/git', () => ({
   cloneRepository: mockCloneRepository,
   syncRepository: mockSyncRepository,
   addSafeDirectory: mockAddSafeDirectory,
@@ -114,7 +114,7 @@ mock.module('@archon/git', () => ({
   toBranchName: (n: string) => n,
   toWorktreePath: (p: string) => p,
   execFileAsync: mockExecFileAsync,
-  mkdirAsync: mock(async () => undefined),
+  mkdirAsync: vi.fn(async () => undefined),
 }));
 
 import { GitHubAdapter } from './adapter';
@@ -122,7 +122,7 @@ import { ConversationLockManager } from '@archon/core';
 
 // Create a mock lock manager that immediately executes handlers
 const mockLockManager = {
-  acquireLock: mock(async (_id: string, handler: () => Promise<void>) => {
+  acquireLock: vi.fn(async (_id: string, handler: () => Promise<void>) => {
     await handler();
   }),
   getStats: () => ({
@@ -264,7 +264,7 @@ describe('GitHubAdapter', () => {
         botMention
       );
       // @ts-expect-error - accessing private method for testing
-      adapter.verifySignature = mock(() => true);
+      adapter.verifySignature = vi.fn(() => true);
       return adapter;
     }
 
@@ -466,7 +466,7 @@ describe('GitHubAdapter', () => {
 
   describe('conversationId format', () => {
     test('should parse valid owner/repo#number format', async () => {
-      const mockCreateComment = mock(() => Promise.resolve({ data: {} }));
+      const mockCreateComment = vi.fn(() => Promise.resolve({ data: {} }));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       await testAdapter.sendMessage('owner/repo#123', 'test');
@@ -480,7 +480,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('postComment appends bot marker to outgoing comments', async () => {
-      const mockCreateComment = mock(() => Promise.resolve({ data: {} }));
+      const mockCreateComment = vi.fn(() => Promise.resolve({ data: {} }));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       await testAdapter.sendMessage('owner/repo#123', 'Hello world');
@@ -492,7 +492,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should reject invalid conversationId format', async () => {
-      const mockCreateComment = mock(() => Promise.resolve({ data: {} }));
+      const mockCreateComment = vi.fn(() => Promise.resolve({ data: {} }));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       // Invalid format (pr-42 is not a number) should return early without calling API
@@ -646,7 +646,7 @@ describe('GitHubAdapter', () => {
 
   describe('message splitting', () => {
     test('should split long messages into multiple chunks', async () => {
-      const mockCreateComment = mock(() => Promise.resolve({ data: {} }));
+      const mockCreateComment = vi.fn(() => Promise.resolve({ data: {} }));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       // Create message exceeding MAX_LENGTH (65000)
@@ -683,7 +683,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should not split message at exactly MAX_LENGTH', async () => {
-      const mockCreateComment = mock(() => Promise.resolve({ data: {} }));
+      const mockCreateComment = vi.fn(() => Promise.resolve({ data: {} }));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       // Message exactly at MAX_LENGTH (65000) should not be split
@@ -694,7 +694,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should handle message without paragraph breaks', async () => {
-      const mockCreateComment = mock(() => Promise.resolve({ data: {} }));
+      const mockCreateComment = vi.fn(() => Promise.resolve({ data: {} }));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       // Message under MAX_LENGTH with no paragraph breaks
@@ -705,7 +705,8 @@ describe('GitHubAdapter', () => {
     });
 
     test('should throw error when chunk posting fails', async () => {
-      const mockCreateComment = mock()
+      const mockCreateComment = vi
+        .fn()
         .mockResolvedValueOnce({ data: {} }) // First chunk succeeds
         .mockRejectedValueOnce(new Error('API rate limit exceeded')); // Second chunk fails
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
@@ -727,7 +728,8 @@ describe('GitHubAdapter', () => {
 
   describe('retry logic', () => {
     test('should retry on transient network errors', async () => {
-      const mockCreateComment = mock()
+      const mockCreateComment = vi
+        .fn()
         .mockRejectedValueOnce(new Error('fetch failed')) // First attempt fails
         .mockResolvedValueOnce({ data: {} }); // Second attempt succeeds
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment, {
@@ -742,7 +744,8 @@ describe('GitHubAdapter', () => {
 
     test('should retry on transient status errors', async () => {
       const transientError = Object.assign(new Error('Gateway failure'), { status: 502 });
-      const mockCreateComment = mock()
+      const mockCreateComment = vi
+        .fn()
         .mockRejectedValueOnce(transientError) // First attempt fails
         .mockResolvedValueOnce({ data: {} }); // Second attempt succeeds
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment, {
@@ -756,7 +759,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should not retry on non-retryable errors', async () => {
-      const mockCreateComment = mock().mockRejectedValue(new Error('Bad credentials'));
+      const mockCreateComment = vi.fn().mockRejectedValue(new Error('Bad credentials'));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       // Should throw immediately without retry
@@ -770,7 +773,7 @@ describe('GitHubAdapter', () => {
 
     test('should not retry on auth status errors', async () => {
       const authError = Object.assign(new Error('Unauthorized'), { status: 401 });
-      const mockCreateComment = mock().mockRejectedValue(authError);
+      const mockCreateComment = vi.fn().mockRejectedValue(authError);
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment);
 
       // Should throw immediately without retry
@@ -783,7 +786,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should throw after exhausting retries', async () => {
-      const mockCreateComment = mock().mockRejectedValue(new Error('fetch failed'));
+      const mockCreateComment = vi.fn().mockRejectedValue(new Error('fetch failed'));
       const testAdapter = await createTestAdapterWithMockedOctokit(mockCreateComment, {
         retryDelayMs: () => 1,
       });
@@ -872,7 +875,7 @@ describe('GitHubAdapter', () => {
     }
 
     test('should fetch and format comment history', async () => {
-      const mockListComments = mock(() =>
+      const mockListComments = vi.fn(() =>
         Promise.resolve({
           data: [
             // API returns in desc order (newest first) because direction: 'desc'
@@ -905,7 +908,7 @@ describe('GitHubAdapter', () => {
 
     test('should preserve full comment content without truncation', async () => {
       const longBody = 'a'.repeat(5000);
-      const mockListComments = mock(() =>
+      const mockListComments = vi.fn(() =>
         Promise.resolve({ data: [{ user: { login: 'user1' }, body: longBody }] })
       );
 
@@ -918,7 +921,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should handle comments without user or body (null and undefined)', async () => {
-      const mockListComments = mock(() =>
+      const mockListComments = vi.fn(() =>
         Promise.resolve({
           data: [
             { user: null, body: 'Comment without user' },
@@ -936,7 +939,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should return empty array on API error', async () => {
-      const mockListComments = mock(() => Promise.reject(new Error('API rate limit exceeded')));
+      const mockListComments = vi.fn(() => Promise.reject(new Error('API rate limit exceeded')));
 
       const testAdapter = createAdapterWithListComments(mockListComments);
       const history = await callFetchCommentHistory(testAdapter);
@@ -945,7 +948,7 @@ describe('GitHubAdapter', () => {
     });
 
     test('should handle empty comment list', async () => {
-      const mockListComments = mock(() => Promise.resolve({ data: [] }));
+      const mockListComments = vi.fn(() => Promise.resolve({ data: [] }));
 
       const testAdapter = createAdapterWithListComments(mockListComments);
       const history = await callFetchCommentHistory(testAdapter);
@@ -1118,18 +1121,18 @@ describe('GitHubAdapter', () => {
       const octokitInstances = new Map<number, unknown>();
       const lookups = new Map<string, number>();
 
-      const getToken = mock(async (owner: string, _repo: string) => {
+      const getToken = vi.fn(async (owner: string, _repo: string) => {
         return `ghs_${owner}_token`;
       });
-      const resolveId = mock(async (owner: string, _repo: string) => {
+      const resolveId = vi.fn(async (owner: string, _repo: string) => {
         const key = `${owner.toLowerCase()}`;
         if (!lookups.has(key)) lookups.set(key, installationIdFor(owner));
         return lookups.get(key)!;
       });
-      const prime = mock((owner: string, _repo: string, installationId: number) => {
+      const prime = vi.fn((owner: string, _repo: string, installationId: number) => {
         lookups.set(owner.toLowerCase(), installationId);
       });
-      const invalidate = mock((_id: number) => undefined);
+      const invalidate = vi.fn((_id: number) => undefined);
 
       // Each per-installation Octokit mock starts with createComment/repos/pulls
       // mocked. Test bodies can call `.mockResolvedValueOnce(...)` /
@@ -1141,14 +1144,14 @@ describe('GitHubAdapter', () => {
             __installationId: installationId,
             rest: {
               issues: {
-                createComment: mock(async () => ({ data: { id: 1 } })),
-                listComments: mock(async () => ({ data: [] })),
+                createComment: vi.fn(async () => ({ data: { id: 1 } })),
+                listComments: vi.fn(async () => ({ data: [] })),
               },
               repos: {
-                get: mock(async () => ({ data: { default_branch: 'main' } })),
+                get: vi.fn(async () => ({ data: { default_branch: 'main' } })),
               },
               pulls: {
-                get: mock(async () => ({
+                get: vi.fn(async () => ({
                   data: {
                     head: { ref: 'feature', sha: 'abc123def', repo: { full_name: 'o/r' } },
                     base: { repo: { full_name: 'o/r' } },
@@ -1162,18 +1165,18 @@ describe('GitHubAdapter', () => {
         return oct;
       }
 
-      const getOctokit = mock(async (owner: string, repo: string) => {
+      const getOctokit = vi.fn(async (owner: string, repo: string) => {
         const id = await resolveId(owner, repo);
         return octokitFor(id);
       });
 
-      const invalidateRepo = mock((_owner: string, _repo: string) => undefined);
+      const invalidateRepo = vi.fn((_owner: string, _repo: string) => undefined);
 
       function buildProvider() {
         return {
           slug: opts.slug ?? 'archon-test',
           getInstallationToken: getToken,
-          getInstallationTokenById: mock(async () => 'ghs_by_id'),
+          getInstallationTokenById: vi.fn(async () => 'ghs_by_id'),
           getOctokitForInstallation: getOctokit,
           resolveInstallationId: resolveId,
           primeInstallationLookup: prime,
@@ -1207,7 +1210,7 @@ describe('GitHubAdapter', () => {
         'archon'
       );
       // @ts-expect-error - mock signature verification
-      adapter.verifySignature = mock(() => true);
+      adapter.verifySignature = vi.fn(() => true);
       return { adapter, provider };
     }
 

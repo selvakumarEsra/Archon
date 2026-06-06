@@ -1,8 +1,8 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import * as git from '@archon/git';
 
 // Mock logger to suppress noisy output
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => ({
     fatal: () => undefined,
     error: () => undefined,
@@ -89,15 +89,17 @@ describe('IsolationResolver', () => {
   let verifyWorktreeOwnershipSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    worktreeExistsSpy = spyOn(git, 'worktreeExists').mockResolvedValue(true);
-    getCanonicalSpy = spyOn(git, 'getCanonicalRepoPath').mockResolvedValue(
-      '/repos/myrepo' as git.RepoPath
-    );
-    findWorktreeByBranchSpy = spyOn(git, 'findWorktreeByBranch').mockResolvedValue(null);
-    isAncestorOfSpy = spyOn(git, 'isAncestorOf').mockResolvedValue(true);
+    worktreeExistsSpy = vi.spyOn(git, 'worktreeExists').mockResolvedValue(true);
+    getCanonicalSpy = vi
+      .spyOn(git, 'getCanonicalRepoPath')
+      .mockResolvedValue('/repos/myrepo' as git.RepoPath);
+    findWorktreeByBranchSpy = vi.spyOn(git, 'findWorktreeByBranch').mockResolvedValue(null);
+    isAncestorOfSpy = vi.spyOn(git, 'isAncestorOf').mockResolvedValue(true);
     // Default: ownership verification passes. Tests that exercise cross-clone
     // behavior override this with a rejection.
-    verifyWorktreeOwnershipSpy = spyOn(git, 'verifyWorktreeOwnership').mockResolvedValue(undefined);
+    verifyWorktreeOwnershipSpy = vi
+      .spyOn(git, 'verifyWorktreeOwnership')
+      .mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -809,7 +811,7 @@ describe('IsolationResolver', () => {
   describe('cross-checkout guard', () => {
     test('findReusable throws when worktree belongs to a different clone', async () => {
       const env = makeEnvRow();
-      const updateStatusSpy = mock(() => Promise.resolve());
+      const updateStatusSpy = vi.fn(() => Promise.resolve());
       const resolver = createResolver({
         store: makeMockStore({
           findActiveByWorkflow: async () => env,
@@ -868,7 +870,7 @@ describe('IsolationResolver', () => {
         working_path: '/worktrees/issue-100',
         branch_name: 'issue-100',
       });
-      const updateStatusSpy = mock(() => Promise.resolve());
+      const updateStatusSpy = vi.fn(() => Promise.resolve());
       const resolver = createResolver({
         store: makeMockStore({
           // First path (findReusable) misses — no active env for requested workflowId
@@ -942,7 +944,7 @@ describe('IsolationResolver', () => {
             'Remove it from that clone or use a different codebase registration.'
         )
       );
-      const createSpy = mock(async () => makeEnvRow());
+      const createSpy = vi.fn(async () => makeEnvRow());
       const resolver = createResolver({ store: makeMockStore({ create: createSpy }) });
 
       await expect(

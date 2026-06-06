@@ -1,16 +1,16 @@
-import { describe, test, expect, beforeEach, mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(() => mockLogger),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(() => mockLogger),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 interface ExecResult {
@@ -18,11 +18,11 @@ interface ExecResult {
   stderr: string;
 }
 
-const mockExecFileAsync = mock(
+const mockExecFileAsync = vi.fn(
   (_cmd: string, _args: string[]): Promise<ExecResult> =>
     Promise.resolve({ stdout: '', stderr: '' })
 );
-mock.module('@archon/git', () => ({
+vi.mock('@archon/git', () => ({
   execFileAsync: mockExecFileAsync,
   toRepoPath: (p: string) => p,
   toBranchName: (b: string) => b,

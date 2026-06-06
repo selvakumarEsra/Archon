@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
@@ -23,7 +23,7 @@ describe('telemetryStatusCommand', () => {
     for (const k of ENV_VARS) saved[k] = process.env[k];
     tmpHome = mkdtempSync(join(tmpdir(), 'archon-cli-telemetry-'));
     process.env.ARCHON_HOME = tmpHome;
-    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -97,7 +97,7 @@ describe('telemetryResetCommand', () => {
   });
 
   it('returns 0 and prints the new UUID on success', () => {
-    const logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     expect(telemetryResetCommand()).toBe(0);
     expect(logSpy.mock.calls.flat().join(' ')).toContain('Rotated install UUID');
     logSpy.mockRestore();
@@ -108,7 +108,7 @@ describe('telemetryResetCommand', () => {
     const filePath = join(tmpdir(), `archon-tel-notdir-${process.pid}-${tmpHome.length}`);
     writeFileSync(filePath, 'x', 'utf8');
     process.env.ARCHON_HOME = join(filePath, 'nested');
-    const errSpy = spyOn(console, 'error').mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(telemetryResetCommand()).toBe(1);
     expect(errSpy.mock.calls.flat().join(' ')).toContain('failed to rotate telemetry ID');
     errSpy.mockRestore();

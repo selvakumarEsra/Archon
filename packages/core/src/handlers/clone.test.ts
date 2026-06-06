@@ -2,18 +2,18 @@
  * Unit tests for clone.ts (cloneRepository, registerRepository)
  *
  * Strategy:
- * - mock.module() for DB modules and @archon/paths (safe — no standalone test files for these)
- * - spyOn() for @archon/git (execFileAsync) and fs/promises (access, rm)
+ * - vi.mock() for DB modules and @archon/paths (safe — no standalone test files for these)
+ * - vi.spyOn() for @archon/git (execFileAsync) and fs/promises (access, rm)
  *   to avoid process-global mock.module pollution that would break git.test.ts
  * - Lazy logger pattern means @archon/paths mock must be set up before the module import
  */
-import { describe, test, expect, mock, beforeEach, afterAll, afterEach, spyOn } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterAll, afterEach } from 'vitest';
 import * as fsPromises from 'fs/promises';
 import * as gitUtils from '@archon/git';
 import { createMockLogger } from '../test/mocks/logger';
 
 // ── DB mocks ────────────────────────────────────────────────────────────────
-const mockCreateCodebase = mock(() =>
+const mockCreateCodebase = vi.fn(() =>
   Promise.resolve({
     id: 'codebase-uuid-1',
     name: 'owner/repo',
@@ -25,14 +25,14 @@ const mockCreateCodebase = mock(() =>
     updated_at: new Date(),
   })
 );
-const mockGetCodebaseCommands = mock(() => Promise.resolve({}));
-const mockUpdateCodebaseCommands = mock(() => Promise.resolve());
-const mockFindCodebaseByRepoUrl = mock(() => Promise.resolve(null));
-const mockFindCodebaseByDefaultCwd = mock(() => Promise.resolve(null));
-const mockFindCodebaseByName = mock(() => Promise.resolve(null));
-const mockUpdateCodebase = mock(() => Promise.resolve());
+const mockGetCodebaseCommands = vi.fn(() => Promise.resolve({}));
+const mockUpdateCodebaseCommands = vi.fn(() => Promise.resolve());
+const mockFindCodebaseByRepoUrl = vi.fn(() => Promise.resolve(null));
+const mockFindCodebaseByDefaultCwd = vi.fn(() => Promise.resolve(null));
+const mockFindCodebaseByName = vi.fn(() => Promise.resolve(null));
+const mockUpdateCodebase = vi.fn(() => Promise.resolve());
 
-mock.module('../db/codebases', () => ({
+vi.mock('../db/codebases', () => ({
   createCodebase: mockCreateCodebase,
   getCodebaseCommands: mockGetCodebaseCommands,
   updateCodebaseCommands: mockUpdateCodebaseCommands,
@@ -45,30 +45,30 @@ mock.module('../db/codebases', () => ({
 // ── @archon/paths mock ──────────────────────────────────────────────────────
 const mockLogger = createMockLogger();
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  expandTilde: mock((p: string) => p.replace(/^~/, '/home/test')),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands']),
-  ensureProjectStructure: mock(() => Promise.resolve()),
-  getProjectSourcePath: mock(
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  expandTilde: vi.fn((p: string) => p.replace(/^~/, '/home/test')),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands']),
+  ensureProjectStructure: vi.fn(() => Promise.resolve()),
+  getProjectSourcePath: vi.fn(
     (owner: string, repo: string) => `/home/test/.archon/workspaces/${owner}/${repo}/source`
   ),
-  createProjectSourceSymlink: mock(() => Promise.resolve()),
-  parseOwnerRepo: mock((name: string) => {
+  createProjectSourceSymlink: vi.fn(() => Promise.resolve()),
+  parseOwnerRepo: vi.fn((name: string) => {
     const parts = name.split('/');
     return parts.length === 2 ? { owner: parts[0], repo: parts[1] } : null;
   }),
 }));
 
 // ── config-loader mock ──────────────────────────────────────────────────────
-const mockLoadConfig = mock(() => Promise.resolve({ assistant: 'claude' }));
-mock.module('../config/config-loader', () => ({
+const mockLoadConfig = vi.fn(() => Promise.resolve({ assistant: 'claude' }));
+vi.mock('../config/config-loader', () => ({
   loadConfig: mockLoadConfig,
 }));
 
 // ── utils/commands mock ─────────────────────────────────────────────────────
-const mockFindMarkdownFilesRecursive = mock(() => Promise.resolve([]));
-mock.module('../utils/commands', () => ({
+const mockFindMarkdownFilesRecursive = vi.fn(() => Promise.resolve([]));
+vi.mock('../utils/commands', () => ({
   findMarkdownFilesRecursive: mockFindMarkdownFilesRecursive,
 }));
 
@@ -82,11 +82,11 @@ let spyExecFileAsync: ReturnType<typeof spyOn>;
 
 function setupSpies(): void {
   // Default: .git does NOT exist (no pre-existing clone)
-  spyFsAccess = spyOn(fsPromises, 'access').mockRejectedValue(
-    Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-  );
-  spyFsRm = spyOn(fsPromises, 'rm').mockResolvedValue(undefined);
-  spyExecFileAsync = spyOn(gitUtils, 'execFileAsync').mockResolvedValue({
+  spyFsAccess = vi
+    .spyOn(fsPromises, 'access')
+    .mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+  spyFsRm = vi.spyOn(fsPromises, 'rm').mockResolvedValue(undefined);
+  spyExecFileAsync = vi.spyOn(gitUtils, 'execFileAsync').mockResolvedValue({
     stdout: '',
     stderr: '',
   });

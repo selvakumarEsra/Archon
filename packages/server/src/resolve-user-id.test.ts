@@ -6,42 +6,42 @@
  * message handling: if resolveUserId ever rethrows, the entire conversation
  * silently stops being processed. Regressions here are catastrophic.
  */
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // Mute the server logger so test output stays readable + capture warn calls.
 const warnCalls: { obj: object; evt: string }[] = [];
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock((obj: object, evt: string) => {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn((obj: object, evt: string) => {
     warnCalls.push({ obj, evt });
   }),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'server' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'server' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => mockLogger,
   // Other paths exports the server might pull in transitively
-  logArchonPaths: mock(() => undefined),
-  validateAppDefaultsPaths: mock(() => undefined),
-  shutdownTelemetry: mock(() => Promise.resolve()),
+  logArchonPaths: vi.fn(() => undefined),
+  validateAppDefaultsPaths: vi.fn(() => undefined),
+  shutdownTelemetry: vi.fn(() => Promise.resolve()),
 }));
 
-const findOrCreate = mock(async (_p: string, _id: string, _name?: string) => ({
+const findOrCreate = vi.fn(async (_p: string, _id: string, _name?: string) => ({
   id: 'user-uuid',
   display_name: 'Resolved',
   email: null,
   created_at: new Date(),
   updated_at: new Date(),
 }));
-mock.module('@archon/core/db/users', () => ({
+vi.mock('@archon/core/db/users', () => ({
   findOrCreateUserByPlatformIdentity: findOrCreate,
 }));
 

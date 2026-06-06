@@ -1,4 +1,4 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // Device-flow + DB collaborators are mocked so the test exercises the
 // orchestration (ordering, persistence, profile cache) without network or DB.
@@ -19,22 +19,22 @@ const token = {
 };
 const profile = { id: 42, login: 'alice', name: 'Alice', email: 'alice@example.com' };
 
-const mockStart = mock(async () => device);
-const mockPoll = mock(async () => token);
-const mockFetchUser = mock(async () => profile);
-mock.module('./device-flow', () => ({
+const mockStart = vi.fn(async () => device);
+const mockPoll = vi.fn(async () => token);
+const mockFetchUser = vi.fn(async () => profile);
+vi.mock('./device-flow', () => ({
   startDeviceFlow: mockStart,
   pollDeviceFlow: mockPoll,
   fetchGithubUser: mockFetchUser,
 }));
-mock.module('./config', () => ({ loadDeviceFlowConfig: () => ({ clientId: 'Iv1.test' }) }));
+vi.mock('./config', () => ({ loadDeviceFlowConfig: () => ({ clientId: 'Iv1.test' }) }));
 
-const mockSave = mock(async () => {});
-mock.module('../db/user-github-token-store', () => ({ saveUserGithubToken: mockSave }));
+const mockSave = vi.fn(async () => {});
+vi.mock('../db/user-github-token-store', () => ({ saveUserGithubToken: mockSave }));
 
-const mockLink = mock(async () => {});
-const mockUpdateProfile = mock(async () => {});
-mock.module('../db/users', () => ({
+const mockLink = vi.fn(async () => {});
+const mockUpdateProfile = vi.fn(async () => {});
+vi.mock('../db/users', () => ({
   linkGithubIdentity: mockLink,
   updateUserGithubProfile: mockUpdateProfile,
 }));

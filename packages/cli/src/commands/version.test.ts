@@ -1,7 +1,7 @@
 /**
  * Tests for version command
  */
-import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as git from '@archon/git';
 import { versionCommand } from './version';
 
@@ -10,8 +10,8 @@ describe('versionCommand', () => {
   let execSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
-    execSpy = spyOn(git, 'execFileAsync').mockResolvedValue({ stdout: 'abc1234\n', stderr: '' });
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    execSpy = vi.spyOn(git, 'execFileAsync').mockResolvedValue({ stdout: 'abc1234\n', stderr: '' });
   });
 
   afterEach(() => {

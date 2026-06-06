@@ -1,28 +1,28 @@
 /**
  * Tests for Codex binary resolution in compiled binary mode.
  *
- * Separate file because mock.module('@archon/paths') with BUNDLED_IS_BINARY=true
+ * Separate file because vi.mock('@archon/paths') with BUNDLED_IS_BINARY=true
  * conflicts with provider.test.ts which mocks it without BUNDLED_IS_BINARY.
  * Must run in its own bun test invocation (see package.json test script).
  */
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createMockLogger } from '../test/mocks/logger';
 
 const mockLogger = createMockLogger();
 
 // Mock @archon/paths with BUNDLED_IS_BINARY = true (simulates compiled binary)
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
   BUNDLED_IS_BINARY: true,
-  getArchonHome: mock(() => '/tmp/test-archon'),
+  getArchonHome: vi.fn(() => '/tmp/test-archon'),
 }));
 
 // Track what path override is passed to the Codex constructor
 let capturedOptions: { codexPathOverride?: string } | undefined;
 
-const mockStartThread = mock(() => ({
+const mockStartThread = vi.fn(() => ({
   id: 'test-thread',
-  runStreamed: mock(() =>
+  runStreamed: vi.fn(() =>
     Promise.resolve({
       events: (async function* () {
         yield {
@@ -34,23 +34,23 @@ const mockStartThread = mock(() => ({
   ),
 }));
 
-const MockCodex = mock((opts?: { codexPathOverride?: string }) => {
+const MockCodex = vi.fn((opts?: { codexPathOverride?: string }) => {
   capturedOptions = opts;
   return {
     startThread: mockStartThread,
-    resumeThread: mock(() => ({})),
+    resumeThread: vi.fn(() => ({})),
   };
 });
-mock.module('@openai/codex-sdk', () => ({
+vi.mock('@openai/codex-sdk', () => ({
   Codex: MockCodex,
 }));
 
 // Mock resolver -- controls binary resolution behavior per test
-const mockResolveCodexBinaryPath = mock(
+const mockResolveCodexBinaryPath = vi.fn(
   (_configPath?: string): Promise<string | undefined> =>
     Promise.resolve('/tmp/test-archon/vendor/codex/codex')
 );
-mock.module('./binary-resolver', () => ({
+vi.mock('./binary-resolver', () => ({
   resolveCodexBinaryPath: mockResolveCodexBinaryPath,
 }));
 

@@ -1,27 +1,27 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { homedir } from 'os';
 import { join } from 'path';
 import { createMockLogger } from '../test/mocks/logger';
 
 const mockLogger = createMockLogger();
 const archonHome = join(homedir(), '.archon');
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonHome: mock(() => archonHome),
-  getArchonConfigPath: mock(() => join(archonHome, 'config.yaml')),
-  getArchonWorkspacesPath: mock(() => join(archonHome, 'workspaces')),
-  getArchonWorktreesPath: mock(() => join(archonHome, 'worktrees')),
-  getDefaultCommandsPath: mock(() => '/app/.archon/commands/defaults'),
-  getDefaultWorkflowsPath: mock(() => '/app/.archon/workflows/defaults'),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonHome: vi.fn(() => archonHome),
+  getArchonConfigPath: vi.fn(() => join(archonHome, 'config.yaml')),
+  getArchonWorkspacesPath: vi.fn(() => join(archonHome, 'workspaces')),
+  getArchonWorktreesPath: vi.fn(() => join(archonHome, 'worktrees')),
+  getDefaultCommandsPath: vi.fn(() => '/app/.archon/commands/defaults'),
+  getDefaultWorkflowsPath: vi.fn(() => '/app/.archon/workflows/defaults'),
 }));
 
 // Mock fs/promises so that readConfigFile/writeConfigFile (which call fsReadFile/writeFile
 // internally) are intercepted regardless of Bun version mock.module semantics.
-const mockFsReadFile = mock(() => Promise.resolve(''));
-const mockFsWriteFile = mock(() => Promise.resolve());
-const mockFsMkdir = mock(() => Promise.resolve(undefined));
+const mockFsReadFile = vi.fn(() => Promise.resolve(''));
+const mockFsWriteFile = vi.fn(() => Promise.resolve());
+const mockFsMkdir = vi.fn(() => Promise.resolve(undefined));
 
-mock.module('fs/promises', () => ({
+vi.mock('fs/promises', () => ({
   readFile: mockFsReadFile,
   writeFile: mockFsWriteFile,
   mkdir: mockFsMkdir,

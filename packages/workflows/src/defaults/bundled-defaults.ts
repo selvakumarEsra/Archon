@@ -33,7 +33,7 @@ export { BUNDLED_COMMANDS, BUNDLED_WORKFLOWS } from './bundled-defaults.generate
  *
  * Kept as a function (rather than a direct re-export of `BUNDLED_IS_BINARY`)
  * so tests can use `spyOn(bundledDefaults, 'isBinaryBuild').mockReturnValue(...)`
- * without resorting to `mock.module('@archon/paths', ...)` — which is
+ * without resorting to `vi.mock('@archon/paths', ...)` — which is
  * process-global and irreversible in Bun and would pollute other test files.
  * See `loader.test.ts` for context.
  */

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn, mock, type Mock } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach, type Mock } from 'vitest';
 import { join } from 'node:path';
 
 // Fixed test home — path assertions use this constant; no duplication of production isDocker() logic.
@@ -6,7 +6,7 @@ const TEST_ARCHON_HOME = '/test/.archon';
 
 // Mock @archon/paths: provide getArchonHome + workspaces path helpers so @archon/git (getWorktreeBase,
 // isProjectScopedWorktreeBase) and worktree.ts resolve paths against TEST_ARCHON_HOME consistently.
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => ({
     fatal: () => undefined,
     error: () => undefined,
@@ -33,10 +33,10 @@ let getDefaultBranchSpy: Mock<typeof git.getDefaultBranch>;
 let syncWorkspaceSpy: Mock<typeof git.syncWorkspace>;
 
 // Mock fs.promises.access for destroy() existence check
-const mockAccess = mock(() => Promise.resolve());
-const mockReadFile = mock(() => Promise.reject(new Error('ENOENT')));
-const mockRm = mock(() => Promise.resolve());
-mock.module('node:fs/promises', () => ({
+const mockAccess = vi.fn(() => Promise.resolve());
+const mockReadFile = vi.fn(() => Promise.reject(new Error('ENOENT')));
+const mockRm = vi.fn(() => Promise.resolve());
+vi.mock('node:fs/promises', () => ({
   access: mockAccess,
   readFile: mockReadFile,
   rm: mockRm,
@@ -57,14 +57,14 @@ describe('WorktreeProvider', () => {
   beforeEach(() => {
     mockConfigLoader = async () => ({ baseBranch: 'main' });
     provider = new WorktreeProvider(mockConfigLoader);
-    execSpy = spyOn(git, 'execFileAsync');
-    mkdirSpy = spyOn(git, 'mkdirAsync');
-    worktreeExistsSpy = spyOn(git, 'worktreeExists');
-    listWorktreesSpy = spyOn(git, 'listWorktrees');
-    findWorktreeByBranchSpy = spyOn(git, 'findWorktreeByBranch');
-    getCanonicalRepoPathSpy = spyOn(git, 'getCanonicalRepoPath');
-    getDefaultBranchSpy = spyOn(git, 'getDefaultBranch');
-    syncWorkspaceSpy = spyOn(git, 'syncWorkspace');
+    execSpy = vi.spyOn(git, 'execFileAsync');
+    mkdirSpy = vi.spyOn(git, 'mkdirAsync');
+    worktreeExistsSpy = vi.spyOn(git, 'worktreeExists');
+    listWorktreesSpy = vi.spyOn(git, 'listWorktrees');
+    findWorktreeByBranchSpy = vi.spyOn(git, 'findWorktreeByBranch');
+    getCanonicalRepoPathSpy = vi.spyOn(git, 'getCanonicalRepoPath');
+    getDefaultBranchSpy = vi.spyOn(git, 'getDefaultBranch');
+    syncWorkspaceSpy = vi.spyOn(git, 'syncWorkspace');
 
     // Default mocks
     execSpy.mockResolvedValue({ stdout: '', stderr: '' });
@@ -1673,7 +1673,7 @@ describe('WorktreeProvider', () => {
     };
 
     beforeEach(() => {
-      copyWorktreeFilesSpy = spyOn(worktreeCopy, 'copyWorktreeFiles');
+      copyWorktreeFilesSpy = vi.spyOn(worktreeCopy, 'copyWorktreeFiles');
 
       // Default: no config, no copies
       copyWorktreeFilesSpy.mockResolvedValue([]);
@@ -1869,8 +1869,8 @@ describe('WorktreeProvider', () => {
     beforeEach(async () => {
       // Dynamic import to mock fs/promises
       const fs = await import('fs/promises');
-      accessSpy = spyOn(fs, 'access');
-      rmSpy = spyOn(fs, 'rm');
+      accessSpy = vi.spyOn(fs, 'access');
+      rmSpy = vi.spyOn(fs, 'rm');
 
       // Default: directory doesn't exist (use proper NodeJS.ErrnoException)
       const enoentError = Object.assign(new Error('ENOENT: no such file or directory'), {
@@ -2112,7 +2112,7 @@ describe('WorktreeProvider', () => {
     });
 
     test('cleans orphaned git-registered worktree when createFromForkPR fails after worktree add', async () => {
-      const removeWorktreeSpy = spyOn(git, 'removeWorktree');
+      const removeWorktreeSpy = vi.spyOn(git, 'removeWorktree');
       removeWorktreeSpy.mockResolvedValue(undefined);
 
       const request: IsolationRequest = {
@@ -2160,7 +2160,7 @@ describe('WorktreeProvider', () => {
     });
 
     test('propagates original error when orphan worktree cleanup itself fails', async () => {
-      const removeWorktreeSpy = spyOn(git, 'removeWorktree');
+      const removeWorktreeSpy = vi.spyOn(git, 'removeWorktree');
       // Cleanup will fail — but original error should still propagate
       removeWorktreeSpy.mockRejectedValue(new Error('worktree is locked'));
 

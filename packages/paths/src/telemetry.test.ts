@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
@@ -282,7 +282,7 @@ describe('first-run notice (via captureWorkflowInvoked)', () => {
 
   test('does not write the notice when stderr is not a TTY', () => {
     setTTY(false);
-    const writeSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const writeSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     captureWorkflowInvoked({ workflowName: 'w' });
     expect(writeSpy).not.toHaveBeenCalled();
     expect(existsSync(stampPath())).toBe(false);
@@ -291,7 +291,7 @@ describe('first-run notice (via captureWorkflowInvoked)', () => {
 
   test('writes the notice once on first invocation (TTY, no stamp) and stamps it', () => {
     setTTY(true);
-    const writeSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const writeSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     captureWorkflowInvoked({ workflowName: 'w' });
     expect(writeSpy).toHaveBeenCalledTimes(1);
     expect(String(writeSpy.mock.calls[0]?.[0])).toContain('anonymous usage telemetry');
@@ -301,7 +301,7 @@ describe('first-run notice (via captureWorkflowInvoked)', () => {
 
   test('does not write again in the same process (noticeChecked guard)', () => {
     setTTY(true);
-    const writeSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const writeSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     captureWorkflowInvoked({ workflowName: 'w' });
     captureWorkflowInvoked({ workflowName: 'w2' });
     expect(writeSpy).toHaveBeenCalledTimes(1);
@@ -312,7 +312,7 @@ describe('first-run notice (via captureWorkflowInvoked)', () => {
     mkdirSync(tmpHome, { recursive: true });
     writeFileSync(stampPath(), '2026-01-01T00:00:00.000Z', 'utf8');
     setTTY(true);
-    const writeSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const writeSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     captureWorkflowInvoked({ workflowName: 'w' });
     expect(writeSpy).not.toHaveBeenCalled();
     writeSpy.mockRestore();
@@ -322,7 +322,7 @@ describe('first-run notice (via captureWorkflowInvoked)', () => {
     setTTY(true);
     process.env.DO_NOT_TRACK = '1';
     resetTelemetryForTests();
-    const writeSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const writeSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     captureWorkflowInvoked({ workflowName: 'w' });
     expect(writeSpy).not.toHaveBeenCalled();
     expect(existsSync(stampPath())).toBe(false);
@@ -462,9 +462,9 @@ describe('new capture functions are fire-and-forget no-throw', () => {
     delete process.env.POSTHOG_API_KEY;
     // Stub the transport so the enabled path never touches the network, then
     // flush deterministically before restoring (no flaky timers / real ingest).
-    const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('{"status":"ok"}', { status: 200 })
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{"status":"ok"}', { status: 200 }));
     try {
       expect(() => captureArchonStarted({ surface: 'server' })).not.toThrow();
       await shutdownTelemetry();
@@ -499,9 +499,9 @@ describe('new capture functions are fire-and-forget no-throw', () => {
     delete process.env.DO_NOT_TRACK;
     delete process.env.CI;
     delete process.env.POSTHOG_API_KEY;
-    const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('{"status":"ok"}', { status: 200 })
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{"status":"ok"}', { status: 200 }));
     try {
       expect(() =>
         captureWorkflowCompleted({

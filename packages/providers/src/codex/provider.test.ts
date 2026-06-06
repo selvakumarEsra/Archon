@@ -1,19 +1,19 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { createMockLogger } from '../test/mocks/logger';
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 /** Default usage matching Codex SDK's Usage type (required on TurnCompletedEvent) */
 const defaultUsage = { input_tokens: 10, cached_input_tokens: 0, output_tokens: 5 };
 
 // Create mock runStreamed first (before it's referenced)
-const mockRunStreamed = mock(() =>
+const mockRunStreamed = vi.fn(() =>
   Promise.resolve({
     events: (async function* () {
       yield { type: 'turn.completed', usage: defaultUsage };
@@ -28,17 +28,17 @@ const createMockThread = (id: string) => ({
 });
 
 // Create mock functions for Codex SDK that use createMockThread
-const mockStartThread = mock(() => createMockThread('new-thread-id'));
-const mockResumeThread = mock(() => createMockThread('resumed-thread-id'));
+const mockStartThread = vi.fn(() => createMockThread('new-thread-id'));
+const mockResumeThread = vi.fn(() => createMockThread('resumed-thread-id'));
 
 // Mock Codex class
-const MockCodex = mock(() => ({
+const MockCodex = vi.fn(() => ({
   startThread: mockStartThread,
   resumeThread: mockResumeThread,
 }));
 
 // Mock the Codex SDK
-mock.module('@openai/codex-sdk', () => ({
+vi.mock('@openai/codex-sdk', () => ({
   Codex: MockCodex,
 }));
 

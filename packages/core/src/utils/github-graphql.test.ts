@@ -4,12 +4,12 @@
  * Note: These tests mock at the module level since the module uses promisify
  * at load time, making it difficult to mock child_process.execFile directly.
  */
-import { describe, test, expect, mock, beforeEach, spyOn } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // We need to mock the entire module to avoid the promisify issue
-const mockGetLinkedIssueNumbers = mock(() => Promise.resolve([] as number[]));
+const mockGetLinkedIssueNumbers = vi.fn(() => Promise.resolve([] as number[]));
 
-mock.module('./github-graphql', () => ({
+vi.mock('./github-graphql', () => ({
   getLinkedIssueNumbers: mockGetLinkedIssueNumbers,
 }));
 

@@ -75,17 +75,9 @@ app.post('/webhooks/my-forge', async (c) => {
 
 ## Testing
 
-### Mock isolation (required)
+### Mock isolation
 
-Bun's `mock.module()` is process-global and irreversible — `mock.restore()` does NOT undo it. Your test file **must** run in its own `bun test` invocation to avoid polluting other tests.
-
-After adding your test file, update `packages/adapters/package.json` to add a separate batch:
-
-```json
-"test": "... existing batches ... && bun test src/community/forge/your-adapter/adapter.test.ts"
-```
-
-Never add your test to an existing batch that mocks the same modules differently (e.g., `@archon/paths`, `@archon/git`).
+Vitest runs each test file in its own worker process, so `vi.mock()` calls scoped to one file do not leak across files. You do not need to plan batch splits — just add your test file and the `vitest run` script picks it up automatically.
 
 ### Lazy logger pattern
 

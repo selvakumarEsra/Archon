@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 
 // ---------------------------------------------------------------------------
@@ -7,26 +7,28 @@ import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 // ../db/workflows with a different shape than operations/workflow-operations.test.ts.
 // ---------------------------------------------------------------------------
 
-const mockFindByPrefix = mock(
+const mockFindByPrefix = vi.fn(
   (_idPrefix: string, _codebaseId: string): Promise<WorkflowRun[]> => Promise.resolve([])
 );
-const mockListDashboardRuns = mock(() => Promise.resolve({ runs: [] as unknown[] }));
+const mockListDashboardRuns = vi.fn(() => Promise.resolve({ runs: [] as unknown[] }));
 
-mock.module('../db/workflows', () => ({
+vi.mock('../db/workflows', () => ({
   findWorkflowRunsByIdPrefix: mockFindByPrefix,
   listDashboardRuns: mockListDashboardRuns,
 }));
 
-const mockAbandon = mock((_id: string) => Promise.resolve({ id: 'r1abcdef', workflow_name: 'wf' }));
-const mockApprove = mock((_id: string, _c?: string) =>
+const mockAbandon = vi.fn((_id: string) =>
+  Promise.resolve({ id: 'r1abcdef', workflow_name: 'wf' })
+);
+const mockApprove = vi.fn((_id: string, _c?: string) =>
   Promise.resolve({ workflowName: 'wf', type: 'approval_gate' as const })
 );
-const mockReject = mock((_id: string, _r?: string) =>
+const mockReject = vi.fn((_id: string, _r?: string) =>
   Promise.resolve({ workflowName: 'wf', cancelled: true, maxAttemptsReached: false })
 );
-const mockResume = mock((_id: string) => Promise.resolve({ id: 'r1abcdef', workflow_name: 'wf' }));
+const mockResume = vi.fn((_id: string) => Promise.resolve({ id: 'r1abcdef', workflow_name: 'wf' }));
 
-mock.module('../operations/workflow-operations', () => ({
+vi.mock('../operations/workflow-operations', () => ({
   abandonWorkflow: mockAbandon,
   approveWorkflow: mockApprove,
   rejectWorkflow: mockReject,
@@ -34,15 +36,15 @@ mock.module('../operations/workflow-operations', () => ({
 }));
 
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 const { buildManageRunTool } = await import('./manage-run-tool');
@@ -165,7 +167,7 @@ describe('manage_run — reads', () => {
 
 describe('manage_run — start', () => {
   test('start delegates to the injected closure with workflow + message', async () => {
-    const startWorkflow = mock((_w: string, _m: string) => Promise.resolve('dispatched'));
+    const startWorkflow = vi.fn((_w: string, _m: string) => Promise.resolve('dispatched'));
     const tool = buildManageRunTool({ codebaseId: CODEBASE_ID, startWorkflow });
     const out = await tool.handler({ action: 'start', workflow: 'plan', message: 'add dark mode' });
     expect(out).toBe('dispatched');
@@ -178,7 +180,7 @@ describe('manage_run — start', () => {
   });
 
   test('start requires a workflow name', async () => {
-    const startWorkflow = mock((_w: string, _m: string) => Promise.resolve('x'));
+    const startWorkflow = vi.fn((_w: string, _m: string) => Promise.resolve('x'));
     const tool = buildManageRunTool({ codebaseId: CODEBASE_ID, startWorkflow });
     expect(await tool.handler({ action: 'start' })).toContain('requires a workflow');
     expect(startWorkflow).not.toHaveBeenCalled();

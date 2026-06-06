@@ -1,18 +1,18 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
 
 // withTransaction forwards its callback to the shared mockQuery instance, so
 // tests can queue mockResolvedValueOnce in transactional order. To simulate a
 // transaction rollback, mockRejectedValueOnce on the INSERT inside the txn —
 // the outer try/catch in users.ts decides whether to recover (UNIQUE race) or
 // rethrow (any other error).
-const mockWithTransaction = mock(
+const mockWithTransaction = vi.fn(
   async (fn: (q: typeof mockQuery) => Promise<unknown>) => await fn(mockQuery)
 );
 
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: { query: mockQuery },
   getDialect: () => mockPostgresDialect,
   getDatabase: () => ({ withTransaction: mockWithTransaction }),

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { vi, afterEach, beforeEach, describe, expect, test } from 'vitest';
 
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -7,8 +7,8 @@ import { join } from 'node:path';
 import { createMockLogger } from '../../test/mocks/logger';
 
 const mockLogger = createMockLogger();
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 type OpencodeEvent = {
@@ -75,19 +75,19 @@ function makeRuntime(overrides?: {
   close?: ReturnType<typeof mock>;
 }): MockRuntime {
   const sessionCreate =
-    overrides?.sessionCreate ?? mock(async () => ({ data: { id: 'session-1' } }));
+    overrides?.sessionCreate ?? vi.fn(async () => ({ data: { id: 'session-1' } }));
   const sessionGet =
-    overrides?.sessionGet ?? mock(async () => ({ data: { id: 'resumed-session' } }));
-  const promptAsync = overrides?.promptAsync ?? mock(async () => undefined);
-  const sessionMessage = overrides?.sessionMessage ?? mock(async () => ({ data: { info: {} } }));
-  const sessionAbort = overrides?.sessionAbort ?? mock(async () => undefined);
+    overrides?.sessionGet ?? vi.fn(async () => ({ data: { id: 'resumed-session' } }));
+  const promptAsync = overrides?.promptAsync ?? vi.fn(async () => undefined);
+  const sessionMessage = overrides?.sessionMessage ?? vi.fn(async () => ({ data: { info: {} } }));
+  const sessionAbort = overrides?.sessionAbort ?? vi.fn(async () => undefined);
   const subscribe =
     overrides?.subscribe ??
-    mock(async () => ({
+    vi.fn(async () => ({
       stream: createEventStream(scriptedEvents),
     }));
-  const instanceDispose = overrides?.instanceDispose ?? mock(async () => true);
-  const close = overrides?.close ?? mock(() => undefined);
+  const instanceDispose = overrides?.instanceDispose ?? vi.fn(async () => true);
+  const close = overrides?.close ?? vi.fn(() => undefined);
 
   return {
     client: {
@@ -112,7 +112,7 @@ function makeRuntime(overrides?: {
   };
 }
 
-const mockCreateOpencode = mock(async () => {
+const mockCreateOpencode = vi.fn(async () => {
   const startupError = startupErrors.shift();
   if (startupError) throw startupError;
   const runtime = runtimeQueue.shift() ?? makeRuntime();
@@ -120,13 +120,13 @@ const mockCreateOpencode = mock(async () => {
   return runtime;
 });
 
-const mockCreateOpencodeClient = mock((_options?: Record<string, unknown>) => {
+const mockCreateOpencodeClient = vi.fn((_options?: Record<string, unknown>) => {
   const runtime = runtimeQueue.shift() ?? makeRuntime();
   createdRuntimes.push(runtime);
   return runtime.client;
 });
 
-mock.module('@opencode-ai/sdk', () => ({
+vi.mock('@opencode-ai/sdk', () => ({
   createOpencode: mockCreateOpencode,
   createOpencodeClient: mockCreateOpencodeClient,
 }));
@@ -316,10 +316,10 @@ describe('OpencodeProvider', () => {
 
   test('session resume handoff falls back to a fresh session with warning', async () => {
     const runtime = makeRuntime({
-      sessionGet: mock(async () => {
+      sessionGet: vi.fn(async () => {
         throw new Error('missing session');
       }),
-      sessionCreate: mock(async () => ({ data: { id: 'fresh-session' } })),
+      sessionCreate: vi.fn(async () => ({ data: { id: 'fresh-session' } })),
     });
     runtimeQueue.push(runtime);
     scriptedEvents = [
@@ -350,7 +350,7 @@ describe('OpencodeProvider', () => {
 
   test('structured output success includes parsed payload on result chunk', async () => {
     const runtime = makeRuntime({
-      sessionMessage: mock(async () => ({
+      sessionMessage: vi.fn(async () => ({
         data: {
           info: {
             structured_output: { answer: 'ok', confidence: 0.9 },
@@ -416,7 +416,7 @@ describe('OpencodeProvider', () => {
 
   test('structured output failure logs debug and still yields terminal result', async () => {
     const runtime = makeRuntime({
-      sessionMessage: mock(async () => {
+      sessionMessage: vi.fn(async () => {
         throw new Error('lookup failed');
       }),
     });
@@ -466,7 +466,7 @@ describe('OpencodeProvider', () => {
 
   test('rate limit errors are classified as retryable and retried', async () => {
     const retryRuntime = makeRuntime({
-      promptAsync: mock(async () => {
+      promptAsync: vi.fn(async () => {
         throw new Error('429 rate limit exceeded');
       }),
     });
@@ -496,7 +496,7 @@ describe('OpencodeProvider', () => {
 
   test('auth errors are classified as non-retryable and do not retry', async () => {
     const runtime = makeRuntime({
-      promptAsync: mock(async () => {
+      promptAsync: vi.fn(async () => {
         const error = new Error('401 unauthorized api key');
         error.name = 'AuthenticationError';
         throw error;
@@ -518,7 +518,7 @@ describe('OpencodeProvider', () => {
 
   test('abort propagates to the OpenCode session and surfaces aborted error', async () => {
     const runtime = makeRuntime({
-      subscribe: mock(async () => ({
+      subscribe: vi.fn(async () => ({
         stream: createPendingStream(),
       })),
     });
@@ -546,8 +546,8 @@ describe('OpencodeProvider', () => {
   });
 
   test('cleanup closes the embedded runtime after completion', async () => {
-    const runtimeA = makeRuntime({ close: mock(() => undefined) });
-    const runtimeB = makeRuntime({ close: mock(() => undefined) });
+    const runtimeA = makeRuntime({ close: vi.fn(() => undefined) });
+    const runtimeB = makeRuntime({ close: vi.fn(() => undefined) });
     runtimeQueue.push(runtimeA, runtimeB);
     scriptedEvents = [
       {
@@ -566,8 +566,8 @@ describe('OpencodeProvider', () => {
   });
 
   test('always starts a fresh embedded runtime per query attempt', async () => {
-    const runtimeA = makeRuntime({ close: mock(() => undefined) });
-    const runtimeB = makeRuntime({ close: mock(() => undefined) });
+    const runtimeA = makeRuntime({ close: vi.fn(() => undefined) });
+    const runtimeB = makeRuntime({ close: vi.fn(() => undefined) });
     runtimeQueue.push(runtimeA, runtimeB);
     scriptedEvents = [{ type: 'session.idle', properties: { sessionID: 'session-1' } }];
 
@@ -583,7 +583,7 @@ describe('OpencodeProvider', () => {
   });
 
   test('embedded runtime passes random port and isolated startup config', async () => {
-    const runtime = makeRuntime({ close: mock(() => undefined) });
+    const runtime = makeRuntime({ close: vi.fn(() => undefined) });
     runtimeQueue.push(runtime);
     scriptedEvents = [{ type: 'session.idle', properties: { sessionID: 'session-1' } }];
 
@@ -615,7 +615,7 @@ describe('OpencodeProvider', () => {
 
   test('embedded runtime retries startup on port conflict and succeeds', async () => {
     startupErrors.push(new Error('Failed to start server on port 4096'));
-    const runtime = makeRuntime({ close: mock(() => undefined) });
+    const runtime = makeRuntime({ close: vi.fn(() => undefined) });
     runtimeQueue.push(runtime);
     scriptedEvents = [{ type: 'session.idle', properties: { sessionID: 'session-1' } }];
 
@@ -788,7 +788,7 @@ describe('OpencodeProvider', () => {
   test('generates agent files before prompt execution path', async () => {
     const cwd = await createTempProjectDir();
     const runtime = makeRuntime({
-      promptAsync: mock(async () => {
+      promptAsync: vi.fn(async () => {
         const content = await readFile(
           join(cwd, '.opencode', 'agents', 'archon-order-check.md'),
           'utf8'
@@ -822,11 +822,11 @@ describe('OpencodeProvider', () => {
     const cwd = await createTempProjectDir();
     const callOrder: string[] = [];
     const runtime = makeRuntime({
-      instanceDispose: mock(async () => {
+      instanceDispose: vi.fn(async () => {
         callOrder.push('dispose');
         return true;
       }),
-      promptAsync: mock(async () => {
+      promptAsync: vi.fn(async () => {
         callOrder.push('prompt');
       }),
     });
@@ -860,7 +860,7 @@ describe('OpencodeProvider', () => {
   test('retries once when first attempt fails with agent-not-found for inline agents', async () => {
     const cwd = await createTempProjectDir();
     const failingRuntime = makeRuntime({
-      promptAsync: mock(async () => {
+      promptAsync: vi.fn(async () => {
         throw new Error("Agent not found: 'archon-reviewer'");
       }),
     });
@@ -1057,11 +1057,11 @@ describe('OpencodeProvider', () => {
 
     const callOrder: string[] = [];
     const runtime = makeRuntime({
-      instanceDispose: mock(async () => {
+      instanceDispose: vi.fn(async () => {
         callOrder.push('dispose');
         return true;
       }),
-      promptAsync: mock(async () => {
+      promptAsync: vi.fn(async () => {
         callOrder.push('prompt');
       }),
     });

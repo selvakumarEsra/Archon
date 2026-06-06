@@ -4,37 +4,37 @@
  * Note: These tests focus on adapter-specific functionality without mocking
  * database modules to avoid test pollution issues with Bun's mock.module.
  */
-import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock @archon/paths to suppress noisy logger output during tests
 const mockLogger = {
-  fatal: mock(() => undefined),
-  error: mock(() => undefined),
-  warn: mock(() => undefined),
-  info: mock(() => undefined),
-  debug: mock(() => undefined),
-  trace: mock(() => undefined),
-  child: mock(function (this: unknown) {
+  fatal: vi.fn(() => undefined),
+  error: vi.fn(() => undefined),
+  warn: vi.fn(() => undefined),
+  info: vi.fn(() => undefined),
+  debug: vi.fn(() => undefined),
+  trace: vi.fn(() => undefined),
+  child: vi.fn(function (this: unknown) {
     return this;
   }),
-  bindings: mock(() => ({ module: 'test' })),
-  isLevelEnabled: mock(() => true),
+  bindings: vi.fn(() => ({ module: 'test' })),
+  isLevelEnabled: vi.fn(() => true),
   level: 'info',
 };
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => mockLogger),
-  getArchonWorkspacesPath: mock(() => '/tmp/test-workspaces'),
-  getCommandFolderSearchPaths: mock(() => ['.archon/commands', '.claude/commands']),
-  getProjectSourcePath: mock(
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => mockLogger),
+  getArchonWorkspacesPath: vi.fn(() => '/tmp/test-workspaces'),
+  getCommandFolderSearchPaths: vi.fn(() => ['.archon/commands', '.claude/commands']),
+  getProjectSourcePath: vi.fn(
     (owner: string, repo: string) => `/tmp/test-workspaces/${owner}/${repo}/source`
   ),
-  ensureProjectStructure: mock(async () => undefined),
-  logArchonPaths: mock(() => undefined),
-  validateAppDefaultsPaths: mock(async () => undefined),
+  ensureProjectStructure: vi.fn(async () => undefined),
+  logArchonPaths: vi.fn(() => undefined),
+  validateAppDefaultsPaths: vi.fn(async () => undefined),
 }));
 
 // Mock @archon/core/db modules to throw immediately (avoid DB connection hangs in tests)
-const mockFindOrCreateUserByPlatformIdentity = mock(
+const mockFindOrCreateUserByPlatformIdentity = vi.fn(
   async (_platform: string, _platformUserId: string, _displayName?: string) => ({
     id: 'user-test-uuid',
     display_name: 'Test',
@@ -43,30 +43,30 @@ const mockFindOrCreateUserByPlatformIdentity = mock(
     updated_at: new Date(),
   })
 );
-mock.module('@archon/core/db/users', () => ({
+vi.mock('@archon/core/db/users', () => ({
   findOrCreateUserByPlatformIdentity: mockFindOrCreateUserByPlatformIdentity,
 }));
-const mockGetOrCreateConversation = mock(async () => {
+const mockGetOrCreateConversation = vi.fn(async () => {
   throw new Error('DB not mocked in tests');
 });
-const mockUpdateConversation = mock(async () => {
+const mockUpdateConversation = vi.fn(async () => {
   throw new Error('DB not mocked in tests');
 });
-const mockGetConversation = mock(async () => null);
-mock.module('@archon/core/db/conversations', () => ({
+const mockGetConversation = vi.fn(async () => null);
+vi.mock('@archon/core/db/conversations', () => ({
   getOrCreateConversation: mockGetOrCreateConversation,
   updateConversation: mockUpdateConversation,
   getConversation: mockGetConversation,
 }));
 
-const mockFindCodebaseByRepoUrl = mock(async () => null);
-const mockCreateCodebase = mock(async () => {
+const mockFindCodebaseByRepoUrl = vi.fn(async () => null);
+const mockCreateCodebase = vi.fn(async () => {
   throw new Error('DB not mocked in tests');
 });
-const mockGetCodebaseCommands = mock(async () => ({}));
-const mockUpdateCodebaseCommands = mock(async () => undefined);
-const mockUpdateCodebase = mock(async () => undefined);
-mock.module('@archon/core/db/codebases', () => ({
+const mockGetCodebaseCommands = vi.fn(async () => ({}));
+const mockUpdateCodebaseCommands = vi.fn(async () => undefined);
+const mockUpdateCodebase = vi.fn(async () => undefined);
+vi.mock('@archon/core/db/codebases', () => ({
   findCodebaseByRepoUrl: mockFindCodebaseByRepoUrl,
   createCodebase: mockCreateCodebase,
   getCodebaseCommands: mockGetCodebaseCommands,
@@ -75,12 +75,12 @@ mock.module('@archon/core/db/codebases', () => ({
 }));
 
 // Mock @archon/git to avoid real git operations in tests
-const mockCloneRepository = mock(async () => ({ ok: true, value: undefined }));
-const mockSyncRepository = mock(async () => ({ ok: true, value: undefined }));
-const mockAddSafeDirectory = mock(async () => undefined);
-const mockIsWorktreePath = mock(async () => false);
+const mockCloneRepository = vi.fn(async () => ({ ok: true, value: undefined }));
+const mockSyncRepository = vi.fn(async () => ({ ok: true, value: undefined }));
+const mockAddSafeDirectory = vi.fn(async () => undefined);
+const mockIsWorktreePath = vi.fn(async () => false);
 
-mock.module('@archon/git', () => ({
+vi.mock('@archon/git', () => ({
   cloneRepository: mockCloneRepository,
   syncRepository: mockSyncRepository,
   addSafeDirectory: mockAddSafeDirectory,
@@ -90,12 +90,12 @@ mock.module('@archon/git', () => ({
 }));
 
 // Mock @archon/core so we can assert handleMessage call args (e.g. userId propagation)
-const mockHandleMessage = mock(async () => undefined);
-const mockOnConversationClosed = mock(async () => undefined);
-mock.module('@archon/core', () => ({
+const mockHandleMessage = vi.fn(async () => undefined);
+const mockOnConversationClosed = vi.fn(async () => undefined);
+vi.mock('@archon/core', () => ({
   handleMessage: mockHandleMessage,
-  classifyAndFormatError: mock((err: Error) => err.message),
-  toError: mock((e: unknown) => (e instanceof Error ? e : new Error(String(e)))),
+  classifyAndFormatError: vi.fn((err: Error) => err.message),
+  toError: vi.fn((e: unknown) => (e instanceof Error ? e : new Error(String(e)))),
   onConversationClosed: mockOnConversationClosed,
   ConversationLockManager: class {
     async acquireLock(_id: string, fn: () => Promise<void>): Promise<void> {
@@ -109,7 +109,7 @@ import { ConversationLockManager } from '@archon/core';
 
 // Create a mock lock manager that immediately executes handlers
 const mockLockManager = {
-  acquireLock: mock(async (_id: string, handler: () => Promise<void>) => {
+  acquireLock: vi.fn(async (_id: string, handler: () => Promise<void>) => {
     await handler();
   }),
   getStats: () => ({
@@ -237,7 +237,7 @@ describe('GiteaAdapter', () => {
         botMention
       );
       // @ts-expect-error - accessing private method for testing
-      adapter.verifySignature = mock(() => true);
+      adapter.verifySignature = vi.fn(() => true);
       return adapter;
     }
 
@@ -358,7 +358,7 @@ describe('GiteaAdapter', () => {
 
   describe('conversationId format', () => {
     test('should parse valid owner/repo#number format for issues', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
@@ -378,7 +378,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('should parse valid owner/repo!number format for PRs', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
@@ -397,7 +397,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('postComment appends bot marker to outgoing comments', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
@@ -414,7 +414,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('should reject invalid conversationId format', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
@@ -503,7 +503,7 @@ describe('GiteaAdapter', () => {
 
   describe('message splitting', () => {
     test('should split long messages into multiple chunks', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
@@ -535,7 +535,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('should not split message at exactly MAX_LENGTH', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
@@ -551,7 +551,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('should handle message without paragraph breaks', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
@@ -567,7 +567,8 @@ describe('GiteaAdapter', () => {
     });
 
     test('should throw error when chunk posting fails', async () => {
-      const mockFetch = mock()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true }) // First chunk succeeds
         .mockResolvedValueOnce({
           ok: false,
@@ -594,7 +595,8 @@ describe('GiteaAdapter', () => {
 
   describe('retry logic', () => {
     test('should retry on transient network errors', async () => {
-      const mockFetch = mock()
+      const mockFetch = vi
+        .fn()
         .mockRejectedValueOnce(new Error('fetch failed')) // First attempt fails
         .mockResolvedValueOnce({ ok: true }); // Second attempt succeeds
       globalThis.fetch = mockFetch as typeof fetch;
@@ -606,7 +608,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('should not retry on non-retryable errors', async () => {
-      const mockFetch = mock().mockResolvedValue({
+      const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
@@ -624,7 +626,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('should throw after exhausting retries', async () => {
-      const mockFetch = mock().mockRejectedValue(new Error('fetch failed'));
+      const mockFetch = vi.fn().mockRejectedValue(new Error('fetch failed'));
       globalThis.fetch = mockFetch as typeof fetch;
 
       await expect(adapter.sendMessage('owner/repo#123', 'test message')).rejects.toThrow(
@@ -661,7 +663,7 @@ describe('GiteaAdapter', () => {
 
   describe('fetchCommentHistory', () => {
     test('should fetch and format comment history', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () =>
@@ -692,7 +694,7 @@ describe('GiteaAdapter', () => {
     });
 
     test('should return empty array on API error', async () => {
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: false,
           status: 429,
@@ -711,7 +713,7 @@ describe('GiteaAdapter', () => {
         user: { login: `user${String(i + 1)}` },
         body: `Comment ${String(i + 1)}`,
       }));
-      const mockFetch = mock(() =>
+      const mockFetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(manyComments),
@@ -861,7 +863,7 @@ describe('GiteaAdapter', () => {
         { retryDelayMs: () => 1 }
       );
       // @ts-expect-error - accessing private method for testing
-      a.verifySignature = mock(() => true);
+      a.verifySignature = vi.fn(() => true);
       return a;
     }
 

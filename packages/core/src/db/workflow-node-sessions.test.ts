@@ -1,21 +1,21 @@
-import { mock, describe, test, expect, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { createQueryResult, mockPostgresDialect } from '../test/mocks/database';
 
-const mockQuery = mock(() => Promise.resolve(createQueryResult([])));
+const mockQuery = vi.fn(() => Promise.resolve(createQueryResult([])));
 
-mock.module('./connection', () => ({
+vi.mock('./connection', () => ({
   pool: { query: mockQuery },
   getDialect: () => mockPostgresDialect,
 }));
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => ({
-    info: mock(() => {}),
-    warn: mock(() => {}),
-    error: mock(() => {}),
-    debug: mock(() => {}),
-    trace: mock(() => {}),
-    fatal: mock(() => {}),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => ({
+    info: vi.fn(() => {}),
+    warn: vi.fn(() => {}),
+    error: vi.fn(() => {}),
+    debug: vi.fn(() => {}),
+    trace: vi.fn(() => {}),
+    fatal: vi.fn(() => {}),
   })),
 }));
 

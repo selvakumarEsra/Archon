@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { sanitizeCredentials, sanitizeError } from './credential-sanitizer';
 
 describe('credential-sanitizer', () => {

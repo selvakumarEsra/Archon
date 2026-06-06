@@ -1,11 +1,11 @@
-import { describe, test, expect, mock } from 'bun:test';
+import { vi, describe, test, expect } from 'vitest';
 
 // Binary-mode variant — must be in a separate file from source-mode tests
-// because mock.module() is process-global in Bun (see CLAUDE.md test isolation rules).
+// because vi.mock() is process-global in Bun (see CLAUDE.md test isolation rules).
 // This file mocks BUNDLED_IS_BINARY=true; the source-build path is verified
 // by postgres.test.ts indirectly when bundled-schema is NOT mocked.
 
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   BUNDLED_IS_BINARY: true,
 }));
 

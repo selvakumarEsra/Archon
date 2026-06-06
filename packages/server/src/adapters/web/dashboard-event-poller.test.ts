@@ -1,13 +1,13 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import type { WorkflowEventRow } from '@archon/core/db/workflow-events';
 
 // Mock the global events query the poller tails. Must be registered before the
 // poller module is imported so its `listWorkflowEventsSince` binding is the mock.
-const mockListSince = mock(
+const mockListSince = vi.fn(
   (_after: Date, _limit: number, _types?: readonly string[]): Promise<WorkflowEventRow[]> =>
     Promise.resolve([])
 );
-mock.module('@archon/core/db/workflow-events', () => ({
+vi.mock('@archon/core/db/workflow-events', () => ({
   listWorkflowEventsSince: mockListSince,
 }));
 

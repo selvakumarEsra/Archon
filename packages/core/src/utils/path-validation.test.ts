@@ -5,7 +5,7 @@
  * to test different WORKSPACE_PATH configurations.
  */
 
-import { describe, test, expect, beforeEach, afterAll } from 'bun:test';
+import { describe, test, expect, beforeEach, afterAll } from 'vitest';
 import { resolve, join } from 'path';
 import { homedir } from 'os';
 

@@ -1,8 +1,8 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { vi, describe, expect, test } from 'vitest';
 import { createMockLogger } from '../../test/mocks/logger';
 
-mock.module('@archon/paths', () => ({
-  createLogger: mock(() => createMockLogger()),
+vi.mock('@archon/paths', () => ({
+  createLogger: vi.fn(() => createMockLogger()),
 }));
 
 import type { SessionEvent } from '@github/copilot-sdk';

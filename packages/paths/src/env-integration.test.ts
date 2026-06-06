@@ -9,7 +9,7 @@
  * simulate it by setting process.env keys before calling stripCwdEnv(). This is
  * equivalent — Bun's auto-load just does process.env[key] = value, same as us.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { config } from 'dotenv';

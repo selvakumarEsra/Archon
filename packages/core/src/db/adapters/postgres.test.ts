@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 // ---- pg mock setup --------------------------------------------------------
 // Must be declared before importing the module under test so that the mock
@@ -22,7 +22,7 @@ let mockClient: MockClient = {
 };
 let poolErrorHandler: ((err: Error) => void) | undefined;
 
-const MockPool = mock(function MockPool(_config: unknown) {
+const MockPool = vi.fn(function MockPool(_config: unknown) {
   return {
     query: (sql: string, params?: unknown[]) => mockPoolQuery(sql, params),
     connect: async () => mockClient,
@@ -35,12 +35,12 @@ const MockPool = mock(function MockPool(_config: unknown) {
   };
 });
 
-mock.module('pg', () => ({
+vi.mock('pg', () => ({
   Pool: MockPool,
 }));
 
 // ---- also mock @archon/paths so logger calls don't blow up ----------------
-mock.module('@archon/paths', () => ({
+vi.mock('@archon/paths', () => ({
   createLogger: () => ({
     info: () => {},
     warn: () => {},
@@ -56,7 +56,7 @@ mock.module('@archon/paths', () => ({
 // variable; the default keeps construction cheap for other tests.
 let mockSchemaSQL = '-- noop schema';
 
-mock.module('../bundled-schema', () => ({
+vi.mock('../bundled-schema', () => ({
   getSchemaSQL: () => mockSchemaSQL,
 }));
 
