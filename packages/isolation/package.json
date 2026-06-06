@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "bun test src/resolver.test.ts && bun test src/providers/ && bun test src/errors.test.ts src/factory.test.ts src/worktree-copy.test.ts && bun test src/pr-state.test.ts",
-    "type-check": "bun x tsc --noEmit"
+    "type-check": "pnpm exec tsc --noEmit"
   },
   "dependencies": {
     "@archon/git": "workspace:*",
