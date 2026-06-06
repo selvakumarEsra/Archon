@@ -8,7 +8,7 @@ let currentDbPath = '';
 
 function createTestDb(): SqliteAdapter {
   currentDbPath = join(
-    import.meta.dir,
+    import.meta.dirname,
     `.test-sqlite-adapter-${Date.now()}-${Math.random().toString(36).slice(2)}.db`
   );
   return new SqliteAdapter(currentDbPath);
@@ -193,7 +193,7 @@ describe('SqliteAdapter', () => {
      */
     test('migrates user_id columns and indexes onto an existing pre-0.4.0 database', () => {
       const dbPath = join(
-        import.meta.dir,
+        import.meta.dirname,
         `.test-sqlite-pre040-${Date.now()}-${Math.random().toString(36).slice(2)}.db`
       );
       currentDbPath = dbPath;

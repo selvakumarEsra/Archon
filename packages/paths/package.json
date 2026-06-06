@@ -11,7 +11,7 @@
     "./env-loader": "./src/env-loader.ts"
   },
   "scripts": {
-    "test": "bun test src/",
+    "test": "vitest run",
     "type-check": "pnpm exec tsc --noEmit"
   },
   "dependencies": {

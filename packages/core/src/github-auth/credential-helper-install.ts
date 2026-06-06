@@ -30,7 +30,15 @@ function getLog(): ReturnType<typeof createLogger> {
 function sourceScriptPath(): string {
   // packages/core/src/github-auth/credential-helper-install.ts
   // ↑ ../../../..                                       repo root
-  return resolve(import.meta.dir, '..', '..', '..', '..', 'scripts', 'git-credential-archon.sh');
+  return resolve(
+    import.meta.dirname,
+    '..',
+    '..',
+    '..',
+    '..',
+    'scripts',
+    'git-credential-archon.sh'
+  );
 }
 
 /**

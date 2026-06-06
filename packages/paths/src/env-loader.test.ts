@@ -12,7 +12,7 @@ import { loadArchonEnv } from './env-loader';
  * argument. Both are tmpdirs; no real ~/.archon/ is touched.
  */
 
-const tmpRoot = join(import.meta.dir, '__env-loader-test-tmp__');
+const tmpRoot = join(import.meta.dirname, '__env-loader-test-tmp__');
 const archonHomeDir = join(tmpRoot, 'archon-home');
 const repoDir = join(tmpRoot, 'repo');
 

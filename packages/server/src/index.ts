@@ -16,8 +16,10 @@ import { existsSync } from 'fs';
 import { BUNDLED_IS_BINARY, getArchonEnvPath } from '@archon/paths';
 
 // In dev/source mode, load the repo root .env (platform tokens, API keys, etc.)
-// import.meta.dir is frozen at build time, so skip in compiled binaries.
-const envPath = BUNDLED_IS_BINARY ? undefined : resolve(import.meta.dir, '..', '..', '..', '.env');
+// import.meta.dirname is frozen at build time, so skip in compiled binaries.
+const envPath = BUNDLED_IS_BINARY
+  ? undefined
+  : resolve(import.meta.dirname, '..', '..', '..', '.env');
 
 if (envPath) {
   const dotenvResult = config({ path: envPath });
@@ -818,13 +820,13 @@ export async function startServer(opts: ServerOptions = {}): Promise<void> {
   });
 
   // Serve web UI static files in production
-  // Uses import.meta.dir for absolute path (CWD varies with bun --filter)
+  // Uses import.meta.dirname for absolute path (CWD varies with bun --filter)
   if (process.env.NODE_ENV === 'production' || !process.env.WEB_UI_DEV) {
     const { serveStatic } = await import('hono/bun');
     const pathModule = await import('path');
     const webDistPath =
       opts.webDistPath ??
-      pathModule.join(pathModule.dirname(pathModule.dirname(import.meta.dir)), 'web', 'dist');
+      pathModule.join(pathModule.dirname(pathModule.dirname(import.meta.dirname)), 'web', 'dist');
 
     if (!existsSync(webDistPath)) {
       getLog().warn({ webDistPath }, 'web_dist_not_found');

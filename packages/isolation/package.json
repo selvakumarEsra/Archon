@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "bun test src/resolver.test.ts && bun test src/providers/ && bun test src/errors.test.ts src/factory.test.ts src/worktree-copy.test.ts && bun test src/pr-state.test.ts",
+    "test": "vitest run",
     "type-check": "pnpm exec tsc --noEmit"
   },
   "dependencies": {

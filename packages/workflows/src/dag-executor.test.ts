@@ -8670,8 +8670,8 @@ describe('provider resolution -- regression for #1610', () => {
 describe('bundled opus nodes -- provider annotation invariant (#1610)', () => {
   it('every bundled node with an opus model has provider: claude at the node or workflow level', async () => {
     // Resolve the defaults directory relative to this package (same logic as getAppArchonBasePath).
-    // import.meta.dir = packages/workflows/src → go up 3 levels to repo root → .archon/workflows/defaults
-    const repoRoot = join(import.meta.dir, '..', '..', '..');
+    // import.meta.dirname = packages/workflows/src → go up 3 levels to repo root → .archon/workflows/defaults
+    const repoRoot = join(import.meta.dirname, '..', '..', '..');
     const defaultsDir = join(repoRoot, '.archon', 'workflows', 'defaults');
 
     const { readdir, readFile: readFileFs } = await import('fs/promises');

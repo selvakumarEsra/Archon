@@ -20,5 +20,8 @@ export function getSchemaSQL(): string {
   }
   // In source builds, read from disk so changes to 000_combined.sql are
   // picked up immediately without running generate:bundled-schema.
-  return readFileSync(resolve(import.meta.dir, '../../../../migrations/000_combined.sql'), 'utf8');
+  return readFileSync(
+    resolve(import.meta.dirname, '../../../../migrations/000_combined.sql'),
+    'utf8'
+  );
 }

@@ -389,7 +389,7 @@ describe('CLI git repo check', () => {
     it('should find repo root from a subdirectory', async () => {
       // Use __dirname which is the directory containing this test file
       // This is a real subdirectory (packages/cli/src) that should resolve to repo root
-      const subdirectory = import.meta.dir;
+      const subdirectory = import.meta.dirname;
       const result = await git.findRepoRoot(subdirectory);
 
       // Should resolve to repo root, not packages/cli/src

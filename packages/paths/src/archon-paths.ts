@@ -338,8 +338,8 @@ async function findMarkdownFilesRecursiveImpl(
 export function getAppArchonBasePath(): string {
   // This file is at packages/paths/src/archon-paths.ts
   // Go up from src → paths → packages → repo root
-  // import.meta.dir = packages/paths/src
-  const repoRoot = dirname(dirname(dirname(import.meta.dir)));
+  // import.meta.dirname = packages/paths/src
+  const repoRoot = dirname(dirname(dirname(import.meta.dirname)));
   return join(repoRoot, '.archon');
 }
 

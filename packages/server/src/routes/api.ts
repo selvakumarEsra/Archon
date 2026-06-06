@@ -163,12 +163,12 @@ if (BUNDLED_IS_BINARY) {
   appVersion = BUNDLED_VERSION;
 } else {
   try {
-    const pkgContent = readFileSync(join(import.meta.dir, '../../../../package.json'), 'utf-8');
+    const pkgContent = readFileSync(join(import.meta.dirname, '../../../../package.json'), 'utf-8');
     const pkg = JSON.parse(pkgContent) as { version?: string };
     appVersion = pkg.version ?? 'unknown';
   } catch (err) {
     getLog().debug(
-      { err, path: join(import.meta.dir, '../../../../package.json') },
+      { err, path: join(import.meta.dirname, '../../../../package.json') },
       'api.version_read_failed'
     );
   }

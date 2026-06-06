@@ -6,7 +6,7 @@ import { isBinaryBuild, BUNDLED_COMMANDS, BUNDLED_WORKFLOWS } from './bundled-de
 // Resolve the on-disk defaults directories relative to this test file so the
 // tests work regardless of cwd. From packages/workflows/src/defaults go up
 // four levels to the repo root, then into .archon/.
-const REPO_ROOT = join(import.meta.dir, '..', '..', '..', '..');
+const REPO_ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 const COMMANDS_DIR = join(REPO_ROOT, '.archon/commands/defaults');
 const WORKFLOWS_DIR = join(REPO_ROOT, '.archon/workflows/defaults');
 

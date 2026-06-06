@@ -41,8 +41,8 @@ const TEST_KEYS = [
 ];
 
 describe('env isolation integration', () => {
-  const cwdDir = join(import.meta.dir, '__env-integration-cwd__');
-  const archonDir = join(import.meta.dir, '__env-integration-archon__');
+  const cwdDir = join(import.meta.dirname, '__env-integration-cwd__');
+  const archonDir = join(import.meta.dirname, '__env-integration-archon__');
   let savedEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
