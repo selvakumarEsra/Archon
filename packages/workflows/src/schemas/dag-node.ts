@@ -609,10 +609,10 @@ export const dagNodeSchema = dagNodeBaseSchema
     };
 
     if (data.command !== undefined && data.command.trim().length > 0) {
-      return { ...base, ...shared, ...aiOnly, command: data.command.trim() } as CommandNode;
+      return { ...base, ...shared, ...aiOnly, command: data.command.trim() };
     }
     if (data.prompt !== undefined && data.prompt.trim().length > 0) {
-      return { ...base, ...shared, ...aiOnly, prompt: data.prompt.trim() } as PromptNode;
+      return { ...base, ...shared, ...aiOnly, prompt: data.prompt.trim() };
     }
     if (data.bash !== undefined && data.bash.trim().length > 0) {
       return {
@@ -620,7 +620,7 @@ export const dagNodeSchema = dagNodeBaseSchema
         ...shared,
         bash: data.bash.trim(),
         ...(data.timeout !== undefined ? { timeout: data.timeout } : {}),
-      } as BashNode;
+      };
     }
     if (data.script !== undefined && data.script.trim().length > 0) {
       // runtime is guaranteed by superRefine to be defined at this point
@@ -632,17 +632,17 @@ export const dagNodeSchema = dagNodeBaseSchema
         runtime: data.runtime,
         ...(data.deps !== undefined ? { deps: data.deps } : {}),
         ...(data.timeout !== undefined ? { timeout: data.timeout } : {}),
-      } as ScriptNode;
+      };
     }
     if (data.approval !== undefined) {
-      return { ...base, ...shared, approval: data.approval } as ApprovalNode;
+      return { ...base, ...shared, approval: data.approval };
     }
     if (data.cancel !== undefined && data.cancel.trim().length > 0) {
-      return { ...base, ...shared, cancel: data.cancel.trim() } as CancelNode;
+      return { ...base, ...shared, cancel: data.cancel.trim() };
     }
     // loop — guaranteed by superRefine to be defined at this point
     if (!data.loop) throw new Error('unreachable: loop must be defined after superRefine');
-    return { ...base, loop: data.loop } as LoopNode;
+    return { ...base, loop: data.loop };
   })
   .openapi('DagNode');
 

@@ -450,7 +450,7 @@ async function silentFetch(
   options: PostHogFetchOptions
 ): Promise<PostHogFetchResponse> {
   try {
-    const res = await fetch(url, options as RequestInit);
+    const res = await fetch(url, options);
     if (res.status < 200 || res.status >= 400) {
       logFetchFailure({ status: res.status }, 'telemetry.http_non_2xx_suppressed');
       return FAKE_OK_RESPONSE;
